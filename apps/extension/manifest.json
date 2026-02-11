@@ -1,0 +1,53 @@
+{
+   "manifest_version": 3,
+   "name": "Popcorn Ratings",
+   "description": "Rate movies and shows right after watching them.",
+   "version": "0.1.0",
+   "icons": {
+        "48": "icons/popcorn icon.png"
+   },
+
+   "action": {
+      "default_popup": "popup/popup.html",
+      "default_icon": {
+        
+      },
+      "default_title": "Popcorn Ratings - View Your Ratings"
+    },
+
+   "background": {
+      "service_worker": "background.js"
+    },  
+
+    "permissions": [
+      "storage",
+      "activeTab"
+    ],  
+
+    "host_permissions": [
+      "*://*.netflix.com/*"
+    ],
+
+   "content_scripts": [
+    {
+        "matches": ["https://www.netflix.com/*"],
+        "js": [
+          "src/rating/rating.js",
+          "src/content.js"
+        ],
+        "css": [
+          "src/rating/rating.css"
+        ],
+        "run_at": "document_idle"
+
+    } 
+   ],
+   "web_accessible_resources": [
+    {
+      "resources": ["src/rating/*"],
+      "matches": ["*://*.netflix.com/*"]
+    }
+  ]
+}
+
+

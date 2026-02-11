@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Popcorn Ratings</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  
+  <!-- Header -->
+  <header class="header">
+    <div class="logo">🍿</div>
+    <h1 class="brand">Popcorn Ratings</h1>
+  </header>
+
+  <!-- Current Show Info -->
+  <div class="show-card">
+    <!-- Thumbnail -->
+    <div class="thumbnail">
+      <span class="placeholder-icon">📺</span>
+    </div>
+    
+    <!-- Show Details -->
+    <div class="details">
+      <h2 class="show-title" id="show-title">No show detected</h2>
+      <p class="episode-info" id="episode-info">Play something on Netflix</p>
+      
+      <!-- Rating: just number, star, count -->
+      <div class="rating-section">
+        <span class="rating-value" id="rating-value">-</span>
+        <span class="rating-star">⭐</span>
+        <span class="rating-count" id="rating-count">(0)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- View Dashboard Button -->
+  <footer class="footer">
+    <button class="dashboard-btn" id="dashboard-btn">
+      📊 View Dashboard
+    </button>
+  </footer>
+
+  <script src="popup.js"></script>
+</body>
+</html>
