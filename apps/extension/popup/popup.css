@@ -1,4 +1,8 @@
-/* Reset */
+/* ================================================
+   POPCORN RATINGS - Larger Extension UI
+   Removed admit-one, bigger thumbnail, larger fonts
+   ================================================ */
+
 * {
   margin: 0;
   padding: 0;
@@ -6,135 +10,250 @@
 }
 
 body {
-  width: 360px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: linear-gradient(145deg, #1e1e2f 0%, #252538 100%);
-  color: #e2e8f0;
+  width: 380px;  /* Increased from 340px */
+  font-family: 'Courier New', monospace;
+  background: linear-gradient(145deg, #1a0f0a 0%, #2d1810 100%);
+  color: #f4e4c1;
 }
 
-/* Header */
-.header {
-  padding: 16px 20px;
-  background: rgba(255, 255, 255, 0.05);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+/* ================================================
+   MARQUEE LIGHTS
+   ================================================ */
+
+.marquee-lights {
+  height: 10px;
+  background: #1a0f0a;
   display: flex;
+  justify-content: space-around;
   align-items: center;
-  gap: 12px;
+  padding: 0 10px;
+  border-bottom: 2px solid #8b0000;
+}
+
+.marquee-bottom {
+  border-bottom: none;
+  border-top: 2px solid #8b0000;
+}
+
+.bulb {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #ffc857;
+  box-shadow: 0 0 6px #ffc857;
+  animation: bulbBlink 1.5s infinite;
+}
+
+.bulb:nth-child(1) { animation-delay: 0s; }
+.bulb:nth-child(2) { animation-delay: 0.25s; }
+.bulb:nth-child(3) { animation-delay: 0.5s; }
+.bulb:nth-child(4) { animation-delay: 0.75s; }
+.bulb:nth-child(5) { animation-delay: 1s; }
+.bulb:nth-child(6) { animation-delay: 1.25s; }
+
+@keyframes bulbBlink {
+  0%, 49%, 100% { opacity: 1; }
+  50%, 99% { opacity: 0.2; }
+}
+
+/* ================================================
+   HEADER
+   ================================================ */
+
+.header {
+  padding: 14px 18px;
+  background: rgba(26, 15, 10, 0.9);
+  border-bottom: 3px double #ffc857;
+  display: flex;
+  justify-content: center;
 }
 
 .logo {
-  font-size: 28px;
-  filter: drop-shadow(0 2px 4px rgba(255, 0, 110, 0.4));
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.brand {
-  font-size: 1.2rem;
-  font-weight: 700;
-  background: linear-gradient(135deg, #ff006e, #8338ec);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+.logo-icon {
+  font-size: 1.8rem;
+  filter: drop-shadow(0 0 8px #ffc857);
+  animation: spin 8s linear infinite;
 }
 
-/* Show Card */
-.show-card {
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.logo-text {
+  font-size: 1rem;
+  font-weight: 900;
+  color: #ffc857;
+  text-shadow: 
+    0 0 8px #ffc857,
+    1px 1px 0 #8b0000;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+
+/* ================================================
+   SHOW TICKET - SIDE BY SIDE LAYOUT
+   ================================================ */
+
+.show-ticket {
+  margin: 20px;
   padding: 20px;
+  background: linear-gradient(135deg, #f4e4c1 0%, #d4b896 100%);
+  border: 4px solid #8b0000;
+  border-radius: 12px;
+  box-shadow: 
+    0 8px 20px rgba(0, 0, 0, 0.5),
+    inset 0 0 0 2px #ffc857;
+  position: relative;
+}
+
+/* Side by Side Container */
+.ticket-content {
   display: flex;
   gap: 16px;
+  align-items: center;
+  margin-bottom: 16px;
 }
 
-/* Thumbnail */
 .thumbnail {
-  width: 80px;
-  height: 120px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  width: 85px;  /* Increased from 60px */
+  height: 110px;  /* Increased from 80px */
+  flex-shrink: 0;
+  background: rgba(139, 0, 0, 0.15);
+  border: 3px solid #8b0000;
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2);
 }
 
 .placeholder-icon {
-  font-size: 32px;
-  opacity: 0.3;
+  font-size: 3rem;  /* Increased from 2rem */
+  opacity: 0.5;
 }
 
-/* Details */
+/* Details - Takes remaining space */
 .details {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .show-title {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #e2e8f0;
+  font-size: 1.15rem;  /* Increased from 0.95rem */
+  font-weight: 900;
+  color: #2c1810;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
   line-height: 1.3;
+  margin: 0;
 }
 
 .episode-info {
-  font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.9rem;  /* Increased from 0.75rem */
+  color: #5a3825;
+  font-style: italic;
+  margin: 0;
   line-height: 1.3;
-  margin-bottom: 8px;
 }
 
-/* Rating Section - Simple inline */
-.rating-section {
-  margin-top: 4px;
+/* Rating Display - Compact */
+.rating-display {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
+  padding: 8px 12px;
+  background: rgba(139, 0, 0, 0.15);
+  border: 2px solid #8b0000;
+  border-radius: 8px;
+  margin-top: 6px;
 }
 
 .rating-value {
-  font-size: 1.4rem;
-  font-weight: 700;
-  color: #ffd93d;
+  font-size: 1.6rem;  /* Increased from 1.4rem */
+  font-weight: 900;
+  color: #8b0000;
   line-height: 1;
 }
 
 .rating-star {
-  font-size: 1.3rem;
+  font-size: 1.3rem;  /* Increased from 1.1rem */
   line-height: 1;
 }
 
 .rating-count {
-  font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.95rem;  /* Increased from 0.8rem */
+  color: #5a3825;
+  font-weight: 700;
   margin-left: 2px;
 }
 
-/* Footer */
+/* Perforation Line */
+.perforation {
+  height: 2px;
+  background: repeating-linear-gradient(
+    90deg,
+    #8b0000 0px,
+    #8b0000 8px,
+    transparent 8px,
+    transparent 16px
+  );
+  margin: 16px 0 12px;
+}
+
+/* Ticket Footer */
+.ticket-footer {
+  text-align: center;
+  font-size: 0.7rem;
+  color: #5a3825;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+
+/* ================================================
+   FOOTER
+   ================================================ */
+
 .footer {
-  padding: 16px 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(0, 0, 0, 0.2);
+  padding: 14px 18px;
+  background: rgba(26, 15, 10, 0.9);
+  border-top: 3px double #ffc857;
 }
 
 .dashboard-btn {
   width: 100%;
-  padding: 12px 20px;
-  background: linear-gradient(135deg, #ff006e, #8338ec);
-  border: none;
+  padding: 12px 18px;
+  background: #8b0000;
+  border: 3px solid #5a0000;
   border-radius: 8px;
-  color: white;
-  font-size: 0.9rem;
-  font-weight: 600;
+  color: #f4e4c1;
+  font-size: 0.95rem;  /* Increased from 0.85rem */
+  font-weight: 900;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(255, 0, 110, 0.3);
+  font-family: 'Courier New', monospace;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.4);
 }
 
 .dashboard-btn:hover {
+  background: #a00000;
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(255, 0, 110, 0.4);
+  box-shadow: 0 6px 16px rgba(139, 0, 0, 0.5);
 }
 
-.dashboard-btn:active {
-  transform: translateY(0);
+.btn-icon {
+  font-size: 1.2rem;
 }

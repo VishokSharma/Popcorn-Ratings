@@ -122,8 +122,7 @@ function showFallbackState(message) {
 function attachEventListeners() {
   elements.dashboardBtn.addEventListener('click', () => {
     console.log('📊 Opening dashboard...');
-    // TODO: Replace with your actual dashboard URL
-    alert('Dashboard coming soon! 🎬\n\nThis will open your ratings dashboard.');
+    chrome.tabs.create({ url: 'http://localhost:3000/dashboard' });
   });
 }
 

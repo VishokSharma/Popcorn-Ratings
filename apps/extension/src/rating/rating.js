@@ -27,43 +27,48 @@ const PopcornRating = (function () {
   /**
    * Creates the HTML structure for the rating popup
    */
-  function createPopupHTML(episodeTitle = '') {
+  function createPopupHTML(displayText = '') {
     return `
       <div class="pcr-overlay" id="pcr-overlay">
-        <div class="pcr-blob"></div>
-        <div class="pcr-blob"></div>
-        <div class="pcr-blob"></div>
-        
         <div class="pcr-overlay-bg" id="pcr-overlay-bg"></div>
         
         <div class="pcr-modal" id="pcr-modal">
           <button class="pcr-close" id="pcr-close" aria-label="Close">×</button>
           
+          <!-- Popcorn Display -->
           <div class="pcr-popcorn-display">
-            <span class="pcr-corn">🍿</span>
-            <span class="pcr-corn">🍿</span>
-            <span class="pcr-corn">🍿</span>
-            <span class="pcr-corn">🍿</span>
-            <span class="pcr-corn">🍿</span>
-            <span class="pcr-flying-corn">🍿</span>
-            <span class="pcr-flying-corn">🍿</span>
-            <span class="pcr-flying-corn">🍿</span>
-            <div class="pcr-tub"></div>
+            <div class="pcr-tub">🍿</div>
           </div>
           
-          <h1 class="pcr-title">Popcorn Ratings</h1>
+          <!-- Title -->
+          <h1 class="pcr-title">POPCORN RATINGS</h1>
           
+          <!-- Admit One Badge -->
+          <div class="pcr-admit-badge">
+            <span>★ RATE THIS SHOW ★</span>
+          </div>
+          
+          <!-- Show/Episode Info -->
           <div class="pcr-subtitle" id="pcr-episode-details">
-            ${episodeTitle || 'How was this episode? 🎬'}
+            ${displayText || 'How was this episode? 🎬'}
           </div>
           
+          <!-- Rating Label -->
+          <div class="pcr-rating-label">SELECT YOUR RATING</div>
+          
+          <!-- Stars Container -->
           <div class="pcr-stars-container" id="pcr-stars-container"></div>
           
+          <!-- Rating Text Display -->
           <div class="pcr-rating-text" id="pcr-rating-text"></div>
           
+          <!-- Perforation -->
+          <div class="pcr-perforation"></div>
+          
+          <!-- Buttons -->
           <div class="pcr-buttons">
-            <button class="pcr-btn pcr-btn-skip" id="pcr-btn-skip">Skip</button>
-            <button class="pcr-btn pcr-btn-submit" id="pcr-btn-submit" disabled>Submit Rating</button>
+            <button class="pcr-btn pcr-btn-skip" id="pcr-btn-skip">SKIP</button>
+            <button class="pcr-btn pcr-btn-submit" id="pcr-btn-submit" disabled>SUBMIT RATING</button>
           </div>
         </div>
       </div>

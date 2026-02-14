@@ -1,0 +1,611 @@
+/* ================================================
+   AUTH PAGE - RETRO CINEMA THEME
+   ================================================ */
+
+.main {
+  min-height: 100vh;
+  background: linear-gradient(145deg, #1a0f0a 0%, #2d1810 50%, #1a0f0a 100%);
+  color: #f4e4c1;
+  position: relative;
+  overflow-x: hidden;
+  font-family: 'Courier New', monospace;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+/* ================================================
+   BACKGROUND ELEMENTS
+   ================================================ */
+
+.filmGrain {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(255, 255, 255, 0.03) 2px,
+      rgba(255, 255, 255, 0.03) 4px
+    );
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.5;
+}
+
+.blob1, .blob2 {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(100px);
+  opacity: 0.2;
+  animation: float 20s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.blob1 {
+  width: 400px;
+  height: 400px;
+  background: #8b0000;
+  top: -100px;
+  left: -100px;
+}
+
+.blob2 {
+  width: 350px;
+  height: 350px;
+  background: #ffc857;
+  bottom: -100px;
+  right: -100px;
+  animation-delay: -7s;
+}
+
+@keyframes float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(30px, -30px) scale(1.05); }
+}
+
+/* Floating Popcorn */
+.floatingPopcorn {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.floatingPopcorn span {
+  position: absolute;
+  font-size: 2.5rem;
+  animation: floatPopcorn 10s ease-in-out infinite;
+  opacity: 0.1;
+}
+
+.popcorn1 { top: 15%; left: 10%; animation-delay: 0s; }
+.popcorn2 { top: 25%; right: 15%; animation-delay: 2.5s; }
+.popcorn3 { bottom: 20%; left: 15%; animation-delay: 5s; }
+.popcorn4 { bottom: 30%; right: 10%; animation-delay: 7.5s; }
+
+@keyframes floatPopcorn {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-30px) rotate(180deg); }
+}
+
+/* ================================================
+   BACK BUTTON
+   ================================================ */
+
+.backBtn {
+  position: fixed;
+  top: 30px;
+  left: 30px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 25px;
+  background: rgba(26, 15, 10, 0.8);
+  border: 2px solid #ffc857;
+  border-radius: 8px;
+  color: #ffc857;
+  text-decoration: none;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: all 0.3s;
+  z-index: 100;
+  font-size: 0.9rem;
+}
+
+.backBtn:hover {
+  background: #ffc857;
+  color: #1a0f0a;
+  transform: translateX(-5px);
+}
+
+/* ================================================
+   AUTH CONTAINER
+   ================================================ */
+
+.authContainer {
+  max-width: 550px;
+  width: 100%;
+  display: flex;
+  position: relative;
+  z-index: 2;
+}
+
+/* Ticket Stub */
+.ticketStub {
+  width: 100px;
+  background: linear-gradient(180deg, #d4b896 0%, #c4a886 100%);
+  border: 5px solid #8b0000;
+  border-right: none;
+  border-radius: 15px 0 0 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 40px 15px;
+  position: relative;
+}
+
+.ticketStub::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: repeating-linear-gradient(
+    0deg,
+    #8b0000 0px,
+    #8b0000 10px,
+    transparent 10px,
+    transparent 20px
+  );
+}
+
+.stubText {
+  font-size: 1rem;
+  font-weight: 900;
+  color: #8b0000;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  letter-spacing: 3px;
+}
+
+.stubIcon {
+  font-size: 3rem;
+  transform: rotate(90deg);
+}
+
+/* ================================================
+   AUTH CARD
+   ================================================ */
+
+.authCard {
+  flex: 1;
+  background: linear-gradient(135deg, #f4e4c1 0%, #d4b896 100%);
+  border: 6px solid #8b0000;
+  border-left: none;
+  border-radius: 0 15px 15px 0;
+  padding: 50px 45px;
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.6),
+    inset 0 0 0 3px #ffc857;
+  position: relative;
+}
+
+/* Vintage Stamp */
+.vintageStamp {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  border: 4px solid #8b0000;
+  background: rgba(139, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transform: rotate(15deg);
+  z-index: 10;
+}
+
+.vintageStamp span {
+  font-size: 0.75rem;
+  font-weight: 900;
+  color: #8b0000;
+  line-height: 1.2;
+  letter-spacing: 1px;
+}
+
+/* Header */
+.authHeader {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.popcornLogo {
+  font-size: 4rem;
+  margin-bottom: 15px;
+  animation: wiggle 3s ease-in-out infinite;
+}
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(-5deg); }
+  50% { transform: rotate(5deg); }
+}
+
+.authTitle {
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: #8b0000;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  margin-bottom: 10px;
+  line-height: 1.1;
+}
+
+.authSubtitle {
+  font-size: 1rem;
+  color: #5a3825;
+  font-style: italic;
+}
+
+/* Perforation */
+.perforation {
+  height: 2px;
+  background: repeating-linear-gradient(
+    90deg,
+    #8b0000 0px,
+    #8b0000 12px,
+    transparent 12px,
+    transparent 24px
+  );
+  margin: 25px 0;
+}
+
+/* ================================================
+   TABS
+   ================================================ */
+
+.authTabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 30px;
+}
+
+.tab {
+  flex: 1;
+  padding: 12px 20px;
+  background: transparent;
+  border: 2px solid #8b0000;
+  color: #8b0000;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+  border-radius: 8px;
+}
+
+.tab:hover {
+  background: rgba(139, 0, 0, 0.1);
+}
+
+.tabActive {
+  background: #8b0000;
+  color: #f4e4c1;
+  box-shadow: 0 4px 15px rgba(139, 0, 0, 0.3);
+}
+
+/* ================================================
+   FORM
+   ================================================ */
+
+.authForm {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.formLabel {
+  font-size: 0.85rem;
+  font-weight: 900;
+  color: #5a3825;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.formInput {
+  padding: 14px 18px;
+  background: rgba(255, 255, 255, 0.5);
+  border: 2px solid rgba(139, 0, 0, 0.3);
+  border-radius: 8px;
+  color: #2c1810;
+  font-size: 1rem;
+  font-family: 'Courier New', monospace;
+  transition: all 0.3s;
+}
+
+.formInput:focus {
+  outline: none;
+  border-color: #8b0000;
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 0 0 3px rgba(139, 0, 0, 0.1);
+}
+
+.formInput::placeholder {
+  color: rgba(90, 56, 37, 0.5);
+}
+
+.forgotPassword {
+  text-align: right;
+  margin-top: -10px;
+}
+
+.forgotPassword a {
+  color: #8b0000;
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.forgotPassword a:hover {
+  text-decoration: underline;
+}
+
+.submitBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px 40px;
+  background: #8b0000;
+  color: #f4e4c1;
+  border: 4px solid #5a0000;
+  border-radius: 10px;
+  font-weight: 900;
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-family: 'Courier New', monospace;
+  margin-top: 10px;
+}
+
+.submitBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(139, 0, 0, 0.4);
+}
+
+.btnIcon {
+  font-size: 1.5rem;
+  font-weight: 900;
+}
+
+/* ================================================
+   SOCIAL LOGIN
+   ================================================ */
+
+.socialLogin {
+  margin: 25px 0;
+}
+
+.orText {
+  text-align: center;
+  font-size: 0.85rem;
+  color: #5a3825;
+  font-weight: 700;
+  letter-spacing: 2px;
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.orText::before,
+.orText::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 35%;
+  height: 1px;
+  background: rgba(139, 0, 0, 0.3);
+}
+
+.orText::before {
+  left: 0;
+}
+
+.orText::after {
+  right: 0;
+}
+
+.socialButtons {
+  display: flex;
+  gap: 12px;
+}
+
+.socialBtn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 20px;
+  background: rgba(255, 255, 255, 0.5);
+  border: 2px solid rgba(139, 0, 0, 0.3);
+  border-radius: 8px;
+  color: #2c1810;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-family: 'Courier New', monospace;
+  font-size: 0.95rem;
+}
+
+.socialBtn:hover {
+  background: rgba(255, 255, 255, 0.8);
+  border-color: #8b0000;
+  transform: translateY(-2px);
+}
+
+.socialIcon {
+  font-size: 1.3rem;
+  font-weight: 900;
+}
+
+/* ================================================
+   FOOTER
+   ================================================ */
+
+.authFooter {
+  text-align: center;
+  margin-top: 25px;
+}
+
+.authFooter p {
+  font-size: 0.95rem;
+  color: #5a3825;
+}
+
+.toggleBtn {
+  background: none;
+  border: none;
+  color: #8b0000;
+  font-weight: 900;
+  text-decoration: underline;
+  cursor: pointer;
+  font-family: 'Courier New', monospace;
+  margin-left: 5px;
+  transition: all 0.3s;
+}
+
+.toggleBtn:hover {
+  color: #5a0000;
+}
+
+/* ================================================
+   FEATURE BADGES
+   ================================================ */
+
+.featureBadges {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 20px;
+  z-index: 2;
+}
+
+.badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: rgba(26, 15, 10, 0.8);
+  border: 2px solid rgba(255, 200, 87, 0.3);
+  border-radius: 50px;
+  color: #ffc857;
+  font-size: 0.85rem;
+  font-weight: 600;
+  backdrop-filter: blur(10px);
+}
+
+.badgeIcon {
+  font-size: 1.2rem;
+}
+
+/* ================================================
+   RESPONSIVE
+   ================================================ */
+
+@media (max-width: 768px) {
+  .authContainer {
+    flex-direction: column;
+  }
+
+  .ticketStub {
+    width: 100%;
+    flex-direction: row;
+    border: 5px solid #8b0000;
+    border-bottom: none;
+    border-radius: 15px 15px 0 0;
+    padding: 20px 30px;
+  }
+
+  .ticketStub::after {
+    right: 0;
+    left: 0;
+    top: auto;
+    bottom: 0;
+    width: 100%;
+    height: 3px;
+    background: repeating-linear-gradient(
+      90deg,
+      #8b0000 0px,
+      #8b0000 10px,
+      transparent 10px,
+      transparent 20px
+    );
+  }
+
+  .stubText {
+    writing-mode: horizontal-tb;
+    text-orientation: upright;
+  }
+
+  .stubIcon {
+    transform: rotate(0deg);
+  }
+
+  .authCard {
+    border: 6px solid #8b0000;
+    border-top: none;
+    border-radius: 0 0 15px 15px;
+    padding: 40px 30px;
+  }
+
+  .authTitle {
+    font-size: 2rem;
+  }
+
+  .backBtn {
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    font-size: 0.85rem;
+  }
+
+  .featureBadges {
+    flex-direction: column;
+    bottom: 20px;
+    gap: 10px;
+  }
+
+  .badge {
+    padding: 8px 15px;
+    font-size: 0.8rem;
+  }
+}

@@ -4,7 +4,7 @@
    "description": "Rate movies and shows right after watching them.",
    "version": "0.1.0",
    "icons": {
-        "48": "icons/popcorn icon.png"
+        "48": "icons/popcorn.png"
    },
 
    "action": {
