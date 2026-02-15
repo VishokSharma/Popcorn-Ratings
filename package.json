@@ -20,5 +20,9 @@
   "workspaces": [
     "apps/*",
     "packages/*"
-  ]
+  ],
+  "dependencies": {
+    "@supabase/supabase-js": "^2.95.3",
+    "next": "^16.1.6"
+  }
 }
