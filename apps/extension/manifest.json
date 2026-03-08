@@ -21,7 +21,8 @@
 
     "permissions": [
       "storage",
-      "activeTab"
+      "activeTab",
+      "alarms"
     ],  
 
     "host_permissions": [
@@ -32,6 +33,7 @@
     {
         "matches": ["https://www.netflix.com/*"],
         "js": [
+          "src/services/api.js",
           "src/storageHelper.js",
           "src/rating/rating.js",
           "src/content.js"

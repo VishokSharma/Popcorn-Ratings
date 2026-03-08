@@ -162,10 +162,10 @@ function logAllRatingsTable() {
 /**
  * Handle rating submission
  */
-function handleRatingSubmit(rating) {
+async function handleRatingSubmit(rating) {
   const metadata = getCurrentMetadata();
 
-  const newRating = {
+  const ratingData = {
     title: metadata.fullTitle,
     showName: metadata.showName,
     episodeNumber: metadata.episodeNumber,
@@ -173,18 +173,22 @@ function handleRatingSubmit(rating) {
     rating: rating,
     timestamp: Date.now(),
     url: window.location.href,
+    platform: 'Netflix'
   };
 
   console.log(`⭐ Rating submitted: ${rating}/10 for "${metadata.fullTitle}"`);
 
-  chrome.storage.local.get(["ratings"], (result) => {
-    const ratings = result.ratings || [];
-    ratings.push(newRating);
+  const savedRating = await StorageHelper.saveRating(ratingData);
+  
+  console.log('✅ Rating saved with ID:', savedRating.id);
+  
+  logAllRatingsTable();
 
-    chrome.storage.local.set({ ratings }, () => {
-      console.log("💾 Rating saved to Chrome local storage");
-      logAllRatingsTable();
-    });
+  chrome.runtime.sendMessage({ 
+    action: 'syncPending',
+    ratingId: savedRating.id 
+  }).catch(err => {
+    console.log('Background worker not ready yet:', err);
   });
 }
 

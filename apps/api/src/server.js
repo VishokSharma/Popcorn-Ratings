@@ -65,11 +65,18 @@ const PORT = process.env.PORT || 5000
  * - methods: Which HTTP methods are allowed
  */
 app.use(cors({
-  origin: [
-    'http://localhost:3000',           // Next.js dev server
-    'http://localhost:3001',           // Alternative port
-    'chrome-extension://*'             // Allow any Chrome extension
-  ],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl, Postman)
+    if (!origin) return callback(null, true);
+    
+    // Allow localhost and chrome extensions
+    if (origin.startsWith('http://localhost') || 
+        origin.startsWith('chrome-extension://')) {
+      return callback(null, true);
+    }
+    
+    callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
 }))
