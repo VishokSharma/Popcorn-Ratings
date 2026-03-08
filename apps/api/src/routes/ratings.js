@@ -1,0 +1,300 @@
+/**
+ * ============================================
+ * RATINGS API ROUTES
+ * ============================================
+ * 
+ * Handles all /api/ratings endpoints
+ * 
+ * ENDPOINTS:
+ * GET  /api/ratings?user_id=1  - Get all ratings for a user
+ * POST /api/ratings            - Create a new rating
+ * 
+ * CONCEPTS:
+ * - Router: Groups related routes together
+ * - Async/Await: Handle database queries cleanly
+ * - Try/Catch: Handle errors gracefully
+ * - SQL Parameterization: Prevent SQL injection
+ */
+
+const express = require('express')
+const router = express.Router()
+const pool = require('../config/database')
+
+/**
+ * ============================================
+ * GET /api/ratings
+ * ============================================
+ * 
+ * Fetch all ratings for a specific user
+ * 
+ * QUERY PARAMETERS:
+ * - user_id (required): ID of the user
+ * 
+ * EXAMPLE REQUEST:
+ * GET /api/ratings?user_id=1
+ * 
+ * RESPONSE:
+ * {
+ *   "success": true,
+ *   "data": [
+ *     {
+ *       "id": 1,
+ *       "user_id": 1,
+ *       "show_name": "Breaking Bad",
+ *       "rating": 10,
+ *       ...
+ *     }
+ *   ]
+ * }
+ */
+router.get('/', async (req, res) => {
+  try {
+    /**
+     * Extract user_id from query parameters
+     * 
+     * URL: /api/ratings?user_id=5
+     * req.query = { user_id: '5' }
+     */
+    const { user_id } = req.query
+
+    /**
+     * VALIDATION: Check if user_id was provided
+     * 
+     * If missing, return 400 Bad Request
+     * 400 = Client error (they forgot to send required param)
+     */
+    if (!user_id) {
+      return res.status(400).json({
+        success: false,
+        error: 'user_id query parameter is required'
+      })
+    }
+
+    /**
+     * QUERY DATABASE
+     * 
+     * SQL PARAMETERIZATION:
+     * ❌ BAD (SQL injection vulnerable):
+     * pool.query(`SELECT * FROM ratings WHERE user_id = ${user_id}`)
+     * 
+     * ✅ GOOD (SQL injection safe):
+     * pool.query('SELECT * FROM ratings WHERE user_id = $1', [user_id])
+     * 
+     * PostgreSQL replaces $1 with the value from array,
+     * escaping special characters automatically.
+     * 
+     * Example of SQL injection attack (prevented by parameterization):
+     * user_id = "1 OR 1=1; DROP TABLE ratings;"
+     * Without params: Returns ALL ratings + deletes table!
+     * With params: Looks for user_id = "1 OR 1=1; DROP TABLE ratings;" (harmless string)
+     */
+    const result = await pool.query(
+      `SELECT 
+        id,
+        user_id,
+        show_name,
+        episode_number,
+        episode_title,
+        rating,
+        platform,
+        genre,
+        url,
+        created_at
+      FROM ratings 
+      WHERE user_id = $1 
+      ORDER BY created_at DESC`,
+      [user_id]
+    )
+
+    /**
+     * RETURN SUCCESS RESPONSE
+     * 
+     * result.rows = array of rating objects from database
+     * 
+     * Status 200 = OK (success)
+     */
+    res.status(200).json({
+      success: true,
+      data: result.rows
+    })
+
+  } catch (error) {
+    /**
+     * ERROR HANDLING
+     * 
+     * If anything goes wrong (DB connection lost, query error),
+     * catch it and return 500 Internal Server Error
+     * 
+     * Log error for debugging (shows in terminal)
+     * But don't expose error details to client (security)
+     */
+    console.error('❌ Error fetching ratings:', error)
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch ratings'
+    })
+  }
+})
+
+/**
+ * ============================================
+ * POST /api/ratings
+ * ============================================
+ * 
+ * Create a new rating
+ * 
+ * REQUEST BODY (JSON):
+ * {
+ *   "user_id": 1,
+ *   "show_name": "Breaking Bad",
+ *   "episode_number": "S5E14",
+ *   "episode_title": "Ozymandias",
+ *   "rating": 10,
+ *   "platform": "Netflix",
+ *   "genre": "Drama",
+ *   "url": "https://netflix.com/..."
+ * }
+ * 
+ * RESPONSE:
+ * {
+ *   "success": true,
+ *   "data": {
+ *     "id": 6,
+ *     "user_id": 1,
+ *     "show_name": "Breaking Bad",
+ *     ...
+ *   }
+ * }
+ */
+router.post('/', async (req, res) => {
+  try {
+    /**
+     * Extract data from request body
+     * 
+     * req.body is parsed by express.json() middleware
+     * (configured in server.js)
+     */
+    const {
+      user_id,
+      show_name,
+      episode_number,
+      episode_title,
+      rating,
+      platform,
+      genre,
+      url
+    } = req.body
+
+    /**
+     * VALIDATION: Check required fields
+     * 
+     * user_id, show_name, and rating are required
+     * Others are optional
+     */
+    if (!user_id || !show_name || !rating) {
+      return res.status(400).json({
+        success: false,
+        error: 'user_id, show_name, and rating are required'
+      })
+    }
+
+    /**
+     * VALIDATION: Check rating is between 1-10
+     * 
+     * Database has CHECK constraint too, but validating
+     * in application gives better error message
+     */
+    if (rating < 1 || rating > 10) {
+      return res.status(400).json({
+        success: false,
+        error: 'rating must be between 1 and 10'
+      })
+    }
+
+    /**
+     * INSERT INTO DATABASE
+     * 
+     * RETURNING *:
+     * Returns the created row (including auto-generated id)
+     * Without RETURNING, we'd only know success/failure
+     * With RETURNING, we get the full created rating
+     * 
+     * PARAMETERIZED QUERY:
+     * $1, $2, $3... are replaced with values from array
+     * Safe from SQL injection
+     */
+    const result = await pool.query(
+      `INSERT INTO ratings (
+        user_id,
+        show_name,
+        episode_number,
+        episode_title,
+        rating,
+        platform,
+        genre,
+        url
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING *`,
+      [
+        user_id,
+        show_name,
+        episode_number || null,  // Convert undefined to null
+        episode_title || null,
+        rating,
+        platform || 'Netflix',
+        genre || null,
+        url || null
+      ]
+    )
+
+    /**
+     * RETURN SUCCESS RESPONSE
+     * 
+     * Status 201 = Created (resource successfully created)
+     * result.rows[0] = the newly created rating
+     */
+    res.status(201).json({
+      success: true,
+      data: result.rows[0]
+    })
+
+  } catch (error) {
+    /**
+     * ERROR HANDLING
+     * 
+     * Common errors:
+     * - Foreign key violation (user_id doesn't exist)
+     * - Check constraint violation (rating outside 1-10)
+     * - Database connection lost
+     */
+    console.error('❌ Error creating rating:', error)
+    
+    /**
+     * Check for specific PostgreSQL errors
+     * error.code = PostgreSQL error code
+     * 
+     * 23503 = Foreign key violation
+     * 23514 = Check constraint violation
+     */
+    if (error.code === '23503') {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid user_id'
+      })
+    }
+
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create rating'
+    })
+  }
+})
+
+/**
+ * Export router to be used in server.js
+ * 
+ * Usage in server.js:
+ * const ratingsRoutes = require('./routes/ratings')
+ * app.use('/api/ratings', ratingsRoutes)
+ */
+module.exports = router
