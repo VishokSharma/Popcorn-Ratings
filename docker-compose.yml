@@ -1,116 +1,79 @@
-# ============================================
-# DOCKER COMPOSE CONFIGURATION
-# ============================================
-# 
-# This file defines all services (containers) for local development.
-# 
-# WHAT IT DOES:
-# - Starts PostgreSQL database in a container
-# - Persists data in a volume (survives restarts)
-# - Exposes port 5432 for connections
-# - Sets up network for future containers
-#
-# USAGE:
-#   docker-compose up    → Start all services
-#   docker-compose down  → Stop all services
-#   docker-compose logs  → View logs
-# ============================================
-
-# Version of Docker Compose syntax
-# Version 3.8 is stable and widely supported
 version: '3.8'
 
-# ============================================
-# SERVICES (Containers to run)
-# ============================================
 services:
 
   # --------------------------------------------
   # PostgreSQL Database Service
   # --------------------------------------------
   database:
-    # Container name (shows in Docker Desktop)
     container_name: popcorn_postgres
-    
-    # Image to use from Docker Hub
-    # postgres:15-alpine = PostgreSQL 15 on Alpine Linux (smaller size)
-    # alpine = Minimal Linux distro (50MB vs 300MB for full)
     image: postgres:15-alpine
-    
-    # Restart policy
-    # "unless-stopped" = Always restart unless manually stopped
-    # Survives Docker Desktop restart
     restart: unless-stopped
     
-    # Environment variables passed to container
-    # These configure PostgreSQL on first startup
     environment:
-      # Superuser name (like root user)
       POSTGRES_USER: postgres
-      
-      # Superuser password (change in production!)
-      # For local dev, simple password is fine
       POSTGRES_PASSWORD: postgres123
-      
-      # Default database to create
-      # This is created automatically on first start
       POSTGRES_DB: popcorn_ratings
-      
-      # Disable connection password requirement for localhost
-      # PGDATA location (where data is stored inside container)
       PGDATA: /var/lib/postgresql/data
     
-    # Port mapping: host:container
-    # Access via localhost:5432 from your computer
     ports:
       - "5432:5432"
     
-    # Volume mapping for persistent data
-    # postgres_data = named volume (managed by Docker)
-    # /var/lib/postgresql/data = PostgreSQL's data directory
     volumes:
       - postgres_data:/var/lib/postgresql/data
     
-    # Network to join
-    # Allows this container to talk to future containers
     networks:
       - popcorn_network
     
-    # Health check to verify PostgreSQL is ready
-    # Useful for dependent containers (API waits for DB)
     healthcheck:
-      # Command to check if database is accepting connections
       test: ["CMD-SHELL", "pg_isready -U postgres"]
-      
-      # How long to wait before starting health checks
       interval: 10s
-      
-      # How long to wait for response
       timeout: 5s
-      
-      # How many failures before marking unhealthy
       retries: 5
 
-# ============================================
-# VOLUMES (Persistent storage)
-# ============================================
+  # --------------------------------------------
+  # pgAdmin - Database Management UI
+  # --------------------------------------------
+  pgadmin:
+    container_name: popcorn_pgadmin
+    image: dpage/pgadmin4:latest
+    restart: unless-stopped
+    
+    environment:
+      # Login credentials for pgAdmin web interface
+      PGADMIN_DEFAULT_EMAIL: admin@popcornratings.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      
+      # Disable additional password prompts
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+      PGADMIN_CONFIG_SERVER_MODE: 'True'
+    
+    ports:
+      # Access pgAdmin at http://localhost:5050
+      - "5050:80"
+    
+    volumes:
+      # Persist pgAdmin configuration and saved servers
+      - pgadmin_data:/var/lib/pgadmin
+    
+    networks:
+      - popcorn_network
+    
+    # Wait for database to be ready before starting pgAdmin
+    depends_on:
+      database:
+        condition: service_healthy
+
 volumes:
-  # Named volume for PostgreSQL data
-  # Docker manages this automatically
-  # Location varies by OS:
-  #   Mac: ~/Library/Containers/com.docker.docker/Data/...
-  #   Windows: C:\ProgramData\Docker\volumes\...
-  #   Linux: /var/lib/docker/volumes/...
+  # PostgreSQL data volume
   postgres_data:
-    # Driver = how to store data (local = on this computer)
+    driver: local
+  
+  # pgAdmin data volume (saves your server connections)
+  pgadmin_data:
     driver: local
 
-# ============================================
-# NETWORKS (Container communication)
-# ============================================
 networks:
-  # Custom network for all Popcorn Ratings containers
-  # Future containers (API, Redis) will join this network
+  # Shared network for all containers
   popcorn_network:
-    # Driver = how to create network (bridge = default, works locally)
     driver: bridge
