@@ -83,4 +83,8 @@ pool.on('error', (err) => {
  * const pool = require('./config/database')
  * const result = await pool.query('SELECT * FROM ratings')
  */
+
+function temp(){
+  
+}
 module.exports = pool
