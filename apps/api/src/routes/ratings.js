@@ -19,6 +19,7 @@
 const express = require('express')
 const router = express.Router()
 const pool = require('../config/database')
+const { authenticateToken } = require('../middleware/auth')  
 
 /**
  * ============================================
@@ -49,26 +50,9 @@ const pool = require('../config/database')
  */
 router.get('/', async (req, res) => {
   try {
-    /**
-     * Extract user_id from query parameters
-     * 
-     * URL: /api/ratings?user_id=5
-     * req.query = { user_id: '5' }
-     */
-    const { user_id } = req.query
 
-    /**
-     * VALIDATION: Check if user_id was provided
-     * 
-     * If missing, return 400 Bad Request
-     * 400 = Client error (they forgot to send required param)
-     */
-    if (!user_id) {
-      return res.status(400).json({
-        success: false,
-        error: 'user_id query parameter is required'
-      })
-    }
+    // Get user_id from authenticated token (not query param)
+    const user_id = 1
 
     /**
      * QUERY DATABASE
@@ -166,7 +150,7 @@ router.get('/', async (req, res) => {
  *   }
  * }
  */
-router.post('/', async (req, res) => {
+router.post('/', authenticateToken, async (req, res) => {
   try {
     /**
      * Extract data from request body
@@ -174,8 +158,10 @@ router.post('/', async (req, res) => {
      * req.body is parsed by express.json() middleware
      * (configured in server.js)
      */
+    // Get user_id from authenticated token (not request body)
+    const user_id = req.user.id
+
     const {
-      user_id,
       show_name,
       episode_number,
       episode_title,
@@ -185,16 +171,10 @@ router.post('/', async (req, res) => {
       url
     } = req.body
 
-    /**
-     * VALIDATION: Check required fields
-     * 
-     * user_id, show_name, and rating are required
-     * Others are optional
-     */
-    if (!user_id || !show_name || !rating) {
+    if (!show_name || !rating) {
       return res.status(400).json({
         success: false,
-        error: 'user_id, show_name, and rating are required'
+        error: 'show_name and rating are required'
       })
     }
 

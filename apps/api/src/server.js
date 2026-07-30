@@ -178,6 +178,10 @@ app.get('/health/db', async (req, res) => {
 const ratingsRoutes = require('./routes/ratings')
 app.use('/api/ratings', ratingsRoutes)
 
+// Auth routes (NEW)
+const authRoutes = require('./routes/auth')
+app.use('/api/auth', authRoutes)
+
 /**
  * 404 Handler - Catch-all for undefined routes
  * 
