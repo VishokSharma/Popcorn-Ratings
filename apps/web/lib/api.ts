@@ -4,31 +4,19 @@
  * ============================================
  * 
  * Handles all HTTP requests to Express backend
- * 
- * CONCEPTS:
- * - Centralized API calls (one place to change base URL)
- * - Type-safe responses (TypeScript interfaces)
- * - Error handling
- * - Retry logic for failed requests
+ * Automatically includes JWT token in requests
  */
 
 /**
  * API Configuration
  */
 const API_CONFIG = {
-  // Base URL for API
-  // In production, this would be an environment variable
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001',
-  
-  // Request timeout (10 seconds)
   timeout: 10000,
 }
 
 /**
  * TypeScript Interfaces
- * 
- * Define the shape of data we expect from API
- * Helps catch errors at compile time
  */
 export interface Rating {
   id: number
@@ -57,16 +45,20 @@ export interface ApiResponse<T> {
 }
 
 /**
+ * Get JWT token from localStorage
+ */
+function getToken(): string | null {
+  if (typeof window === 'undefined') return null
+  return localStorage.getItem('auth_token')
+}
+
+/**
  * API Client Class
  */
 export class ApiClient {
   
   /**
-   * Make HTTP request with timeout
-   * 
-   * @param url - Full URL to request
-   * @param options - Fetch options
-   * @returns Response
+   * Make HTTP request with timeout and JWT
    */
   private static async fetchWithTimeout(
     url: string, 
@@ -75,9 +67,23 @@ export class ApiClient {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.timeout)
     
+    // Get JWT token
+    const token = getToken()
+    
+    // Add Authorization header if token exists
+    const headers = {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    }
+    
+    if (token) {
+      (headers as any)['Authorization'] = `Bearer ${token}`
+    }
+    
     try {
       const response = await fetch(url, {
         ...options,
+        headers,
         signal: controller.signal,
       })
       
@@ -97,11 +103,6 @@ export class ApiClient {
   
   /**
    * GET /api/ratings
-   * 
-   * Fetch all ratings for a user
-   * 
-   * @param userId - User ID
-   * @returns Array of ratings
    */
   static async getRatings(userId: number): Promise<Rating[]> {
     try {
@@ -111,10 +112,6 @@ export class ApiClient {
       
       const response = await this.fetchWithTimeout(url, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        // Important for Next.js: disable caching for dynamic data
         cache: 'no-store',
       })
       
@@ -130,23 +127,15 @@ export class ApiClient {
       
     } catch (error) {
       console.error('❌ Failed to fetch ratings:', error)
-      
-      // Return empty array instead of throwing
-      // Dashboard should still render even if API is down
       return []
     }
   }
   
   /**
    * POST /api/ratings
-   * 
-   * Create a new rating
-   * 
-   * @param ratingData - Rating to create
-   * @returns Created rating or null
    */
   static async createRating(
-    ratingData: Omit<Rating, 'id' | 'created_at'>
+    ratingData: Omit<Rating, 'id' | 'created_at' | 'user_id'>
   ): Promise<Rating | null> {
     try {
       const url = `${API_CONFIG.baseURL}/api/ratings`
@@ -155,9 +144,6 @@ export class ApiClient {
       
       const response = await this.fetchWithTimeout(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(ratingData),
       })
       
@@ -180,8 +166,6 @@ export class ApiClient {
   
   /**
    * Health check
-   * 
-   * @returns True if API is reachable
    */
   static async healthCheck(): Promise<boolean> {
     try {

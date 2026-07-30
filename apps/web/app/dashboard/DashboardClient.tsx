@@ -1,5 +1,10 @@
 'use client'
 
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@/lib/auth-context'
+const { user, token, loading, logout } = useAuth()
+
 import { useState } from 'react'
 import Link from 'next/link'
 import styles from './dashboard.module.css'
@@ -17,13 +22,36 @@ interface Rating {
 }
 
 export default function DashboardClient({ initialRatings }: { initialRatings: Rating[] }) {
+
+  const router = useRouter()
+  const { user, token, loading } = useAuth()
+
+
   const [ratings, setRatings] = useState<Rating[]>(initialRatings)
   const [searchQuery, setSearchQuery] = useState('')
   const [filterPlatform, setFilterPlatform] = useState('all')
   const [filterRating, setFilterRating] = useState('all')
   const [sortBy, setSortBy] = useState('date-desc')
   const [showUserMenu, setShowUserMenu] = useState(false)
-  const loading = false // No loading needed, data already loaded
+
+
+  // Check if user is authenticated
+  useEffect(() => {
+    if (!loading && !token) {
+      // Redirect to login if not authenticated
+      router.push('/auth')
+    }
+  }, [loading, token, router])
+
+  // Show loading while checking auth
+  if (loading) {
+    return <div style={{ padding: '50px', textAlign: 'center' }}>Loading...</div>
+  }
+
+  // Don't render dashboard if not authenticated
+  if (!token) {
+    return null
+  }
 
   // Calculate stats
   const totalShows = new Set(ratings.map(r => r.showName)).size
@@ -173,14 +201,25 @@ export default function DashboardClient({ initialRatings }: { initialRatings: Ra
                 onClick={() => setShowUserMenu(!showUserMenu)}
               >
                 <span className={styles.userAvatar}>👤</span>
-                <span>User</span>
+                <span>{user?.name || 'User'}</span>
               </button>
               
               {showUserMenu && (
                 <div className={styles.userDropdown}>
+                  <div className={styles.userInfo}>
+                    {user?.email}
+                  </div>
                   <a href="#settings">⚙️ Settings</a>
                   <a href="#profile">👤 Profile</a>
-                  <a href="#signout">🚪 Sign Out</a>
+                  <button 
+                    onClick={() => {
+                      logout()
+                      router.push('/auth')
+                    }}
+                    className={styles.logoutBtn}
+                  >
+                    🚪 Sign Out
+                  </button>
                 </div>
               )}
             </div>
