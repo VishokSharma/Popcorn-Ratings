@@ -2,12 +2,10 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuth } from '@/lib/auth-context'
 import styles from './page.module.css'
 
 export default function AuthPage() {
   const router = useRouter()
-  const { login, signup } = useAuth()
   
   const [isSignUp, setIsSignUp] = useState(false)
   const [email, setEmail] = useState('')
@@ -22,18 +20,37 @@ export default function AuthPage() {
     setLoading(true)
 
     try {
-      if (isSignUp) {
-        if (!name) {
-          setError('Name is required')
-          return
-        }
-        await signup(email, password, name)
-      } else {
-        await login(email, password)
+      // Call Next.js Route Handler (not Express directly!)
+      const endpoint = isSignUp ? '/api/auth/signup' : '/api/auth/login'
+      
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          password,
+          ...(isSignUp && { name })
+        }),
+        credentials: 'include',  // Important: send cookies
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Authentication failed')
       }
 
-      // Redirect to dashboard
-      router.push('/dashboard')
+      // Success! Wait a moment for cookie to be set, then redirect
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
+      // Refresh to ensure cookie is picked up
+      router.refresh()
+      
+      // Then redirect
+      // Success! Redirect to dashboard
+      setTimeout(() => {
+        router.push('/dashboard')
+      }, 200)
+
     } catch (err: any) {
       setError(err.message || 'Authentication failed')
     } finally {

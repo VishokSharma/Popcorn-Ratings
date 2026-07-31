@@ -66,20 +66,29 @@ const PORT = process.env.PORT || 5000
  * - methods: Which HTTP methods are allowed
  */
 app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps, curl, Postman)
-    if (!origin) return callback(null, true);
+  origin: function(origin, callback) {
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      /^chrome-extension:\/\//
+    ]
     
-    // Allow localhost and chrome extensions
-    if (origin.startsWith('http://localhost') || 
-        origin.startsWith('chrome-extension://')) {
-      return callback(null, true);
+    // Allow requests without origin (like mobile apps or curl)
+    if (!origin || allowedOrigins.some(allowed => {
+      if (allowed instanceof RegExp) {
+        return allowed.test(origin)
+      }
+      return allowed === origin
+    })) {
+      callback(null, true)
+    } else {
+      callback(new Error('Not allowed by CORS'))
     }
-    
-    callback(new Error('Not allowed by CORS'));
   },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+  credentials: true,  // ← IMPORTANT: Allow cookies
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  maxAge: 86400  // 24 hours
 }))
 
 /**

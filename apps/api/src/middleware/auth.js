@@ -66,17 +66,15 @@ function authenticateToken(req, res, next) {
    */
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET)
-    
-    /**
-     * STEP 4: Attach user to request
-     * 
-     * Now any route handler can access req.user
-     * Contains: { id, email } from token payload
-     */
-    req.user = {
-      id: decoded.user_id,
-      email: decoded.email
-    }
+      
+      // Store user info in request for later use
+      req.user = {
+        id: decoded.user_id,
+        email: decoded.email
+      }
+      
+      // Also store in res.locals for template access if needed
+      res.locals.user = req.user
     
     /**
      * STEP 5: Continue to next middleware/route

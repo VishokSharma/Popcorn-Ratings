@@ -48,69 +48,28 @@ const { authenticateToken } = require('../middleware/auth')
  *   ]
  * }
  */
-router.get('/', async (req, res) => {
+router.get('/', authenticateToken, async (req, res) => {
   try {
-    // Get user_id from authenticated token (cookie or header)
-    const user_id = 1
-    /**
-     * QUERY DATABASE
-     * 
-     * SQL PARAMETERIZATION:
-     * ❌ BAD (SQL injection vulnerable):
-     * pool.query(`SELECT * FROM ratings WHERE user_id = ${user_id}`)
-     * 
-     * ✅ GOOD (SQL injection safe):
-     * pool.query('SELECT * FROM ratings WHERE user_id = $1', [user_id])
-     * 
-     * PostgreSQL replaces $1 with the value from array,
-     * escaping special characters automatically.
-     * 
-     * Example of SQL injection attack (prevented by parameterization):
-     * user_id = "1 OR 1=1; DROP TABLE ratings;"
-     * Without params: Returns ALL ratings + deletes table!
-     * With params: Looks for user_id = "1 OR 1=1; DROP TABLE ratings;" (harmless string)
-     */
+    // Get user_id from authenticated token (now from cookie!)
+    const user_id = req.user.id
+    
+    console.log(`📋 Fetching ratings for user ${user_id}`)
+
     const result = await pool.query(
-      `SELECT 
-        id,
-        user_id,
-        show_name,
-        episode_number,
-        episode_title,
-        rating,
-        platform,
-        genre,
-        url,
-        created_at
-      FROM ratings 
-      WHERE user_id = $1 
-      ORDER BY created_at DESC`,
+      `SELECT id, user_id, show_name, episode_number, episode_title, rating, platform, genre, url, created_at
+       FROM ratings 
+       WHERE user_id = $1
+       ORDER BY created_at DESC`,
       [user_id]
     )
 
-    /**
-     * RETURN SUCCESS RESPONSE
-     * 
-     * result.rows = array of rating objects from database
-     * 
-     * Status 200 = OK (success)
-     */
-    res.status(200).json({
+    res.json({
       success: true,
       data: result.rows
     })
 
   } catch (error) {
-    /**
-     * ERROR HANDLING
-     * 
-     * If anything goes wrong (DB connection lost, query error),
-     * catch it and return 500 Internal Server Error
-     * 
-     * Log error for debugging (shows in terminal)
-     * But don't expose error details to client (security)
-     */
-    console.error('❌ Error fetching ratings:', error)
+    console.error('❌ Error fetching ratings:', error.message)
     res.status(500).json({
       success: false,
       error: 'Failed to fetch ratings'

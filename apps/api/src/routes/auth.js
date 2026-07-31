@@ -157,9 +157,11 @@ router.post('/signup',
       // Set HTTP-only cookie with JWT
       res.cookie('auth_token', token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: false,  // Allow http in development
         sameSite: 'lax',
-        maxAge: 7 * 24 * 60 * 60 * 1000
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        path: '/',
+        domain: 'localhost'  // Explicitly set domain
       })
 
       res.status(201).json({
@@ -302,10 +304,12 @@ router.post('/signin',
        */
       // Set HTTP-only cookie with JWT
       res.cookie('auth_token', token, {
-        httpOnly: true,           // JavaScript can't access (secure!)
-        secure: process.env.NODE_ENV === 'production',  // HTTPS only in production
-        sameSite: 'lax',          // CSRF protection
-        maxAge: 7 * 24 * 60 * 60 * 1000  // 7 days
+        httpOnly: true,
+        secure: false,  // Allow http in development
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        path: '/',
+        domain: 'localhost'  // Explicitly set domain
       })
 
       res.json({

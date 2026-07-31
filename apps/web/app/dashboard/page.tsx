@@ -1,25 +1,84 @@
-import { ApiClient } from '@/lib/api'
+import { cookies } from 'next/headers'
 import DashboardClient from './DashboardClient'
 
-export default async function Dashboard() {
-  // Fetch ratings for authenticated user
-  // With cookies enabled, the API will know which user this is
-  // For now, still fetching user 1 (will need server-side auth for multiple users)
-  const apiRatings = await ApiClient.getRatings(1)
-  
-  // Transform API data
-  const ratings = apiRatings.map((r) => ({
-    id: r.id,
-    title: `${r.show_name} - ${r.episode_number || ''}`,
-    showName: r.show_name,
-    episodeNumber: r.episode_number || '',
-    episodeTitle: r.episode_title || '',
-    rating: r.rating,
-    timestamp: new Date(r.created_at).getTime(),
-    url: r.url || '',
-    platform: r.platform,
-    genre: r.genre || '',
-  }))
+interface ApiRating {
+  id: number
+  user_id: number
+  show_name: string
+  episode_number: string | null
+  episode_title: string | null
+  rating: number
+  platform: string
+  genre: string | null
+  url: string | null
+  created_at: string
+}
 
-  return <DashboardClient initialRatings={ratings} />
+interface Rating {
+  id: number
+  title: string
+  showName: string
+  episodeNumber: string
+  episodeTitle: string
+  rating: number
+  timestamp: number
+  url: string
+  platform: string
+  genre: string
+}
+
+export default async function Dashboard() {
+  const cookieStore = await cookies()
+  const token = cookieStore.get('auth_token')?.value
+
+  // If no token, just return empty dashboard
+  // DashboardClient will handle the redirect
+  if (!token) {
+    console.log('⚠️ No auth token, rendering empty dashboard')
+    return <DashboardClient initialRatings={[]} isAuthenticated={false} />
+  }
+
+  console.log('✅ Auth token found, fetching ratings...')
+
+  try {
+    const apiUrl = process.env.API_INTERNAL_URL || 'http://localhost:5001'
+    
+    const res = await fetch(`${apiUrl}/api/ratings`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      cache: 'no-store',
+    })
+
+    if (!res.ok) {
+      console.error(`❌ Failed to fetch ratings: ${res.status}`)
+      return <DashboardClient initialRatings={[]} isAuthenticated={true} />
+    }
+
+    const apiResponse = await res.json()
+    const apiRatings: ApiRating[] = apiResponse.data || []
+
+    const ratings: Rating[] = apiRatings.map((r) => ({
+      id: r.id,
+      title: `${r.show_name} - ${r.episode_number || ''}`,
+      showName: r.show_name,
+      episodeNumber: r.episode_number || '',
+      episodeTitle: r.episode_title || '',
+      rating: r.rating,
+      timestamp: new Date(r.created_at).getTime(),
+      url: r.url || '',
+      platform: r.platform,
+      genre: r.genre || '',
+    }))
+
+    console.log(`✅ Fetched ${ratings.length} ratings`)
+
+    return <DashboardClient initialRatings={ratings} isAuthenticated={true} />
+
+  } catch (error) {
+    console.error('❌ Dashboard error:', error)
+    return <DashboardClient initialRatings={[]} isAuthenticated={true} />
+  }
 }

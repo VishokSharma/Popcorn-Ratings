@@ -1,10 +1,7 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuth } from '@/lib/auth-context'
-
-import { useState } from 'react'
 import Link from 'next/link'
 import styles from './dashboard.module.css'
 
@@ -21,12 +18,14 @@ interface Rating {
   genre: string
 }
 
-export default function DashboardClient({ initialRatings }: { initialRatings: Rating[] }) {
-
+export default function DashboardClient({ 
+  initialRatings, 
+  isAuthenticated = true 
+}: { 
+  initialRatings: Rating[]
+  isAuthenticated?: boolean
+}) {
   const router = useRouter()
-  const { user, token, loading, logout } = useAuth()
-
-
   const [ratings, setRatings] = useState<Rating[]>(initialRatings)
   const [searchQuery, setSearchQuery] = useState('')
   const [filterPlatform, setFilterPlatform] = useState('all')
@@ -34,22 +33,15 @@ export default function DashboardClient({ initialRatings }: { initialRatings: Ra
   const [sortBy, setSortBy] = useState('date-desc')
   const [showUserMenu, setShowUserMenu] = useState(false)
 
-
-  // Check if user is authenticated
+  // Redirect if not authenticated
   useEffect(() => {
-    if (!loading && !token) {
-      // Redirect to login if not authenticated
+    if (!isAuthenticated) {
       router.push('/auth')
     }
-  }, [loading, token, router])
+  }, [isAuthenticated, router])
 
-  // Show loading while checking auth
-  if (loading) {
-    return <div style={{ padding: '50px', textAlign: 'center' }}>Loading...</div>
-  }
-
-  // Don't render dashboard if not authenticated
-  if (!token) {
+  // If not authenticated, don't render anything
+  if (!isAuthenticated) {
     return null
   }
 
@@ -201,25 +193,25 @@ export default function DashboardClient({ initialRatings }: { initialRatings: Ra
                 onClick={() => setShowUserMenu(!showUserMenu)}
               >
                 <span className={styles.userAvatar}>👤</span>
-                <span>{user?.name || 'User'}</span>
+                <span>User</span>
               </button>
               
               {showUserMenu && (
                 <div className={styles.userDropdown}>
                   <div className={styles.userInfo}>
-                    {user?.email}
+                    user@example.com
                   </div>
                   <a href="#settings">⚙️ Settings</a>
                   <a href="#profile">👤 Profile</a>
                   <button 
-                    onClick={() => {
-                      logout()
+                    onClick={async () => {
+                      await fetch('/api/auth/logout', { method: 'POST' })
                       router.push('/auth')
                     }}
                     className={styles.logoutBtn}
                   >
                     🚪 Sign Out
-                  </button>
+                </button>
                 </div>
               )}
             </div>
@@ -325,9 +317,7 @@ export default function DashboardClient({ initialRatings }: { initialRatings: Ra
             <span className={styles.sectionCount}>{filteredRatings.length} shows</span>
           </div>
 
-          {loading ? (
-            <div className={styles.loading}>Loading...</div>
-          ) : filteredRatings.length === 0 ? (
+          {filteredRatings.length === 0 ? (
             <div className={styles.emptyState}>
               <div className={styles.emptyIcon}>🎬</div>
               <p>No ratings found. Start watching!</p>
