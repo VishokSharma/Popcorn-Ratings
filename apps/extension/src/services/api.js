@@ -1,201 +1,207 @@
 /**
  * ============================================
- * API SERVICE
+ * API SERVICE FOR CHROME EXTENSION
  * ============================================
  * 
- * Handles all communication with the Express backend.
- * 
- * RESPONSIBILITIES:
- * - Make HTTP requests to API endpoints
- * - Handle network errors gracefully
- * - Retry failed requests
- * - Return standardized responses
- * 
- * ARCHITECTURE:
- * Extension → API Service → Express Backend → PostgreSQL
+ * Handles all communication with Express backend
+ * Automatically includes JWT token in requests
  */
 
 /**
  * API Configuration
- * 
- * In production, this would come from environment variables
- * For development, we hardcode localhost
  */
 const API_CONFIG = {
-  // Base URL for all API endpoints
-  // Change to production URL when deploying
   baseURL: 'http://localhost:5001',
-  
-  // Timeout for requests (10 seconds)
   timeout: 10000,
-  
-  // Retry configuration
-  maxRetries: 3,
-  retryDelay: 5000  // 5 seconds base delay
+}
+
+/**
+ * Get JWT token from chrome.storage
+ * 
+ * @returns {Promise<string|null>} JWT token or null
+ */
+async function getToken() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(['auth_token'], (result) => {
+      resolve(result.auth_token || null)
+    })
+  })
+}
+
+/**
+ * Save JWT token to chrome.storage
+ * 
+ * @param {string} token JWT token
+ */
+async function saveToken(token) {
+  return new Promise((resolve) => {
+    chrome.storage.local.set({ auth_token: token }, resolve)
+  })
+}
+
+/**
+ * Clear JWT token from chrome.storage
+ */
+async function clearToken() {
+  return new Promise((resolve) => {
+    chrome.storage.local.remove(['auth_token'], resolve)
+  })
+}
+
+/**
+ * Get current user from chrome.storage
+ * 
+ * @returns {Promise<object|null>} User object or null
+ */
+async function getCurrentUser() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(['auth_user'], (result) => {
+      resolve(result.auth_user || null)
+    })
+  })
+}
+
+/**
+ * Save user to chrome.storage
+ * 
+ * @param {object} user User object
+ */
+async function saveUser(user) {
+  return new Promise((resolve) => {
+    chrome.storage.local.set({ auth_user: user }, resolve)
+  })
 }
 
 /**
  * APIService class
- * 
- * Provides methods to interact with backend API
- * All methods are async and return promises
  */
 class APIService {
   
   /**
-   * HELPER: Make HTTP request with timeout
-   * 
-   * PROBLEM: fetch() has no built-in timeout
-   * If server hangs, request waits forever
-   * 
-   * SOLUTION: Race fetch against timeout promise
-   * Whichever finishes first wins
-   * 
-   * @param {string} url - Full URL to request
-   * @param {object} options - Fetch options (method, headers, body)
-   * @param {number} timeout - Timeout in milliseconds
-   * @returns {Promise<Response>}
+   * Make HTTP request with timeout and JWT
    */
   static async fetchWithTimeout(url, options = {}, timeout = API_CONFIG.timeout) {
-    /**
-     * Create abort controller
-     * 
-     * AbortController allows us to cancel a fetch request
-     * Used to implement timeout
-     */
     const controller = new AbortController()
-    const signal = controller.signal
-    
-    /**
-     * Create timeout promise
-     * 
-     * This promise rejects after timeout milliseconds
-     * When it rejects, we abort the fetch request
-     */
-    const timeoutId = setTimeout(() => {
-      controller.abort()  // Cancel the fetch
-    }, timeout)
+    const timeoutId = setTimeout(() => controller.abort(), timeout)
     
     try {
-      /**
-       * Make fetch request with abort signal
-       * 
-       * If timeout occurs, signal.abort() is called
-       * Fetch throws AbortError
-       */
+      // Get JWT token
+      const token = await getToken()
+      
+      // Add headers
+      const headers = {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      }
+      
+      // Add Authorization header if token exists
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+      
       const response = await fetch(url, {
         ...options,
-        signal  // Pass abort signal to fetch
+        headers,
+        signal: controller.signal,
       })
       
-      clearTimeout(timeoutId)  // Clear timeout if request succeeds
+      clearTimeout(timeoutId)
       return response
       
     } catch (error) {
       clearTimeout(timeoutId)
-      
-      /**
-       * Handle different error types
-       * 
-       * AbortError = Timeout
-       * TypeError = Network error (offline, DNS failure)
-       * Others = Unknown error
-       */
-      if (error.name === 'AbortError') {
-        throw new Error('Request timeout')
-      }
       throw error
     }
   }
   
   /**
-   * GET /api/ratings
+   * POST /api/auth/signin
    * 
-   * Fetch all ratings for a user
-   * 
-   * @param {string} userId - User ID
-   * @returns {Promise<Array>} Array of rating objects
+   * Login user and save token
    */
-  static async getRatings(userId) {
+  static async signin(email, password) {
     try {
-      const url = `${API_CONFIG.baseURL}/api/ratings?user_id=${userId}`
+      const url = `${API_CONFIG.baseURL}/api/auth/signin`
       
-      console.log('📡 API: Fetching ratings for user', userId)
+      console.log('🔐 Signing in...')
       
-      const response = await this.fetchWithTimeout(url, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
       })
       
-      /**
-       * Check HTTP status
-       * 
-       * 200-299 = Success
-       * 400-499 = Client error (bad request)
-       * 500-599 = Server error
-       */
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        throw new Error('Login failed')
       }
       
       const data = await response.json()
       
-      console.log('✅ API: Fetched', data.data?.length || 0, 'ratings')
+      // Save token and user
+      await saveToken(data.data.token)
+      await saveUser(data.data.user)
       
-      return data.data || []
+      console.log('✅ Signin successful')
+      
+      return data.data
       
     } catch (error) {
-      console.error('❌ API: Failed to fetch ratings:', error.message)
+      console.error('❌ Signin error:', error)
+      throw error
+    }
+  }
+  
+  /**
+   * POST /api/auth/signup
+   * 
+   * Register new user and save token
+   */
+  static async signup(email, password, name) {
+    try {
+      const url = `${API_CONFIG.baseURL}/api/auth/signup`
       
-      /**
-       * Don't throw error - return empty array
-       * 
-       * WHY? If API is down, extension should still work
-       * with local data. Failing to fetch shouldn't crash app.
-       */
-      return []
+      console.log('📝 Signing up...')
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, name }),
+      })
+      
+      if (!response.ok) {
+        throw new Error('Signup failed')
+      }
+      
+      const data = await response.json()
+      
+      // Save token and user
+      await saveToken(data.data.token)
+      await saveUser(data.data.user)
+      
+      console.log('✅ Signup successful')
+      
+      return data.data
+      
+    } catch (error) {
+      console.error('❌ Signup error:', error)
+      throw error
     }
   }
   
   /**
    * POST /api/ratings
    * 
-   * Create a new rating in the database
-   * 
-   * @param {object} ratingData - Rating object to create
-   * @returns {Promise<object|null>} Created rating or null if failed
+   * Create new rating (requires authentication)
    */
   static async createRating(ratingData) {
     try {
       const url = `${API_CONFIG.baseURL}/api/ratings`
       
-      console.log('📡 API: Creating rating:', ratingData.show_name)
-      
-      /**
-       * Transform extension format to API format
-       * 
-       * Extension uses camelCase (showName)
-       * API expects snake_case (show_name)
-       */
-      const apiPayload = {
-        user_id: ratingData.user_id || ratingData.userId,
-        show_name: ratingData.showName || ratingData.show_name,
-        episode_number: ratingData.episodeNumber || ratingData.episode_number,
-        episode_title: ratingData.episodeTitle || ratingData.episode_title,
-        rating: ratingData.rating,
-        platform: ratingData.platform || 'Netflix',
-        genre: ratingData.genre,
-        url: ratingData.url
-      }
+      console.log('📡 Creating rating:', ratingData.show_name)
       
       const response = await this.fetchWithTimeout(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(apiPayload)
+        body: JSON.stringify(ratingData),
       })
       
       if (!response.ok) {
@@ -205,52 +211,64 @@ class APIService {
       
       const data = await response.json()
       
-      console.log('✅ API: Rating created with ID:', data.data?.id)
+      console.log('✅ Rating created with ID:', data.data?.id)
       
       return data.data
       
     } catch (error) {
-      console.error('❌ API: Failed to create rating:', error.message)
-      
-      /**
-       * Return null on failure
-       * 
-       * Caller (background worker) will retry later
-       */
+      console.error('❌ Failed to create rating:', error.message)
       return null
     }
   }
   
   /**
+   * Check if user is authenticated
+   */
+  static async isAuthenticated() {
+    const token = await getToken()
+    const user = await getCurrentUser()
+    return !!(token && user)
+  }
+  
+  /**
+   * Get current authenticated user
+   */
+  static async getUser() {
+    return getCurrentUser()
+  }
+  
+  /**
+   * Logout - clear token and user
+   */
+  static async logout() {
+    await clearToken()
+    
+    // Also clear from storage
+    return new Promise((resolve) => {
+      chrome.storage.local.remove(['auth_user'], resolve)
+    })
+  }
+  
+  /**
    * Health check
-   * 
-   * Verifies API is reachable
-   * Used to detect online/offline status
-   * 
-   * @returns {Promise<boolean>} True if API is reachable
    */
   static async healthCheck() {
     try {
       const url = `${API_CONFIG.baseURL}/health`
       
-      const response = await this.fetchWithTimeout(url, {
-        method: 'GET'
-      }, 5000)  // Short timeout for health check
+      const response = await fetch(url, {
+        method: 'GET',
+        signal: AbortSignal.timeout(5000),
+      })
       
       return response.ok
       
     } catch (error) {
-      console.log('📴 API: Health check failed (offline or API down)')
+      console.log('📴 API health check failed')
       return false
     }
   }
 }
 
-/**
- * Export for use in other files
- * 
- * Usage:
- * const ratings = await APIService.getRatings(userId)
- * const created = await APIService.createRating(ratingData)
- */
+// Export for use in extension
 window.APIService = APIService

@@ -163,17 +163,24 @@ function logAllRatingsTable() {
  * Handle rating submission
  */
 async function handleRatingSubmit(rating) {
+  // Check if user is authenticated
+  const isAuth = await APIService.isAuthenticated()
+  
+  if (!isAuth) {
+    console.log('❌ Not authenticated - please login first')
+    alert('Please login first to rate episodes!\n\nOpen Popcorn Ratings extension menu and click "Login"')
+    return
+  }
+  
   const metadata = getCurrentMetadata();
 
   const ratingData = {
-    title: metadata.fullTitle,
-    showName: metadata.showName,
-    episodeNumber: metadata.episodeNumber,
-    episodeTitle: metadata.episodeTitle,
+    show_name: metadata.showName,
+    episode_number: metadata.episodeNumber,
+    episode_title: metadata.episodeTitle,
     rating: rating,
-    timestamp: Date.now(),
+    platform: 'Netflix',
     url: window.location.href,
-    platform: 'Netflix'
   };
 
   console.log(`⭐ Rating submitted: ${rating}/10 for "${metadata.fullTitle}"`);

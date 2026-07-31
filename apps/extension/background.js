@@ -105,69 +105,38 @@ async function syncSingleRating(rating) {
   try {
     console.log(`📡 Syncing rating: ${rating.showName}`)
     
-    /**
-     * Mark as 'syncing' to prevent duplicate sync attempts
-     * 
-     * If user rates another episode while this syncs,
-     * we don't want to sync this one twice
-     */
     await updateRatingStatus(rating.id, 'syncing')
     
-    /**
-     * Get user info
-     * 
-     * We need user_id to associate rating with user in database
-     */
-    const user = await getUser()
+    // Get JWT token from storage
+    const tokenResult = await new Promise((resolve) => {
+      chrome.storage.local.get(['auth_token'], resolve)
+    })
     
-    if (!user || !user.id) {
-      throw new Error('No user found')
+    const token = tokenResult.auth_token
+    
+    if (!token) {
+      throw new Error('Not authenticated - no token found')
     }
     
-    /**
-     * Prepare rating data for API
-     * 
-     * Include user_id from user object
-     */
     const ratingData = {
-      user_id: user.id,
-      showName: rating.showName,
-      episodeNumber: rating.episodeNumber,
-      episodeTitle: rating.episodeTitle,
+      show_name: rating.showName,
+      episode_number: rating.episodeNumber,
+      episode_title: rating.episodeTitle,
       rating: rating.rating,
       platform: rating.platform || 'Netflix',
       genre: rating.genre,
       url: rating.url
     }
     
-    /**
-     * Call API to create rating
-     * 
-     * This is defined in api.js (loaded via manifest)
-     * We need to use chrome.scripting or message passing
-     * 
-     * PROBLEM: Service workers can't access content script globals
-     * SOLUTION: Replicate API call here or use messaging
-     * 
-     * For simplicity, we'll replicate the API call
-     */
     const apiURL = 'http://localhost:5001/api/ratings'
     
     const response = await fetch(apiURL, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`  // ← ADD JWT TOKEN
       },
-      body: JSON.stringify({
-        user_id: ratingData.user_id,
-        show_name: ratingData.showName,
-        episode_number: ratingData.episodeNumber,
-        episode_title: ratingData.episodeTitle,
-        rating: ratingData.rating,
-        platform: ratingData.platform,
-        genre: ratingData.genre,
-        url: ratingData.url
-      })
+      body: JSON.stringify(ratingData)
     })
     
     if (!response.ok) {
@@ -176,11 +145,6 @@ async function syncSingleRating(rating) {
     
     const result = await response.json()
     
-    /**
-     * Mark as synced
-     * 
-     * Store database ID for future reference
-     */
     await updateRatingStatus(rating.id, 'synced', {
       syncedAt: new Date().toISOString(),
       databaseId: result.data?.id
@@ -191,11 +155,6 @@ async function syncSingleRating(rating) {
   } catch (error) {
     console.error(`❌ Failed to sync ${rating.showName}:`, error.message)
     
-    /**
-     * Increment retry count and mark as failed
-     * 
-     * Will be retried on next sync cycle
-     */
     const retryCount = (rating.retryCount || 0) + 1
     
     await updateRatingStatus(rating.id, 'failed', {
@@ -204,7 +163,6 @@ async function syncSingleRating(rating) {
     })
   }
 }
-
 /**
  * Update rating sync status in storage
  * 
