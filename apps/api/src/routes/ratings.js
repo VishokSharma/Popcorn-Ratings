@@ -53,7 +53,6 @@ router.get('/', async (req, res) => {
 
     // Get user_id from authenticated token (not query param)
     const user_id = 1
-
     /**
      * QUERY DATABASE
      * 
