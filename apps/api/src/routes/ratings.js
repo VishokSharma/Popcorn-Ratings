@@ -50,8 +50,7 @@ const { authenticateToken } = require('../middleware/auth')
  */
 router.get('/', async (req, res) => {
   try {
-
-    // Get user_id from authenticated token (not query param)
+    // Get user_id from authenticated token (cookie or header)
     const user_id = 1
     /**
      * QUERY DATABASE

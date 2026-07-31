@@ -67,7 +67,7 @@ export class ApiClient {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.timeout)
     
-    // Get JWT token
+    // Get JWT token from localStorage
     const token = getToken()
     
     // Add Authorization header if token exists
@@ -85,6 +85,7 @@ export class ApiClient {
         ...options,
         headers,
         signal: controller.signal,
+        credentials: 'include',  // ← ADD THIS: Send cookies with request
       })
       
       clearTimeout(timeoutId)

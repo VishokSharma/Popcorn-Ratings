@@ -29,22 +29,22 @@ const jwt = require('jsonwebtoken')
  */
 function authenticateToken(req, res, next) {
   /**
-   * STEP 1: Extract token from Authorization header
+   * STEP 1: Extract token from cookie OR Authorization header
    * 
-   * Header format: "Authorization: Bearer <token>"
-   * Example: "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+   * Priority:
+   * 1. Try cookie first (from HTTP-only cookie)
+   * 2. Fall back to Authorization header (for API clients)
    */
-  const authHeader = req.headers['authorization']
+  let token = req.cookies?.auth_token
   
-  // authHeader = "Bearer eyJhbG..."
-  // token = "eyJhbG..." (remove "Bearer " prefix)
-  const token = authHeader && authHeader.split(' ')[1]
+  // If no cookie, try Authorization header
+  if (!token) {
+    const authHeader = req.headers['authorization']
+    token = authHeader && authHeader.split(' ')[1]
+  }
   
   /**
    * STEP 2: Check if token exists
-   * 
-   * If no token provided, user is not authenticated
-   * Return 401 Unauthorized
    */
   if (!token) {
     return res.status(401).json({

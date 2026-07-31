@@ -154,6 +154,14 @@ router.post('/signup',
        * 
        * Don't return password_hash!
        */
+      // Set HTTP-only cookie with JWT
+      res.cookie('auth_token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000
+      })
+
       res.status(201).json({
         success: true,
         data: {
@@ -292,6 +300,14 @@ router.post('/signin',
        * 
        * Don't return password_hash!
        */
+      // Set HTTP-only cookie with JWT
+      res.cookie('auth_token', token, {
+        httpOnly: true,           // JavaScript can't access (secure!)
+        secure: process.env.NODE_ENV === 'production',  // HTTPS only in production
+        sameSite: 'lax',          // CSRF protection
+        maxAge: 7 * 24 * 60 * 60 * 1000  // 7 days
+      })
+
       res.json({
         success: true,
         data: {
@@ -301,7 +317,7 @@ router.post('/signin',
             name: user.name,
             created_at: user.created_at
           },
-          token
+          token  // Still send in JSON for client-side backup
         }
       })
       

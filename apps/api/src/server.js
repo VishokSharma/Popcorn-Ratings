@@ -23,6 +23,7 @@ const express = require('express')
 const cors = require('cors')
 const pool = require('./config/database')
 const errorHandler = require('./middleware/errorHandler')
+const cookieParser = require('cookie-parser')
 
 /**
  * CREATE EXPRESS APP
@@ -94,6 +95,8 @@ app.use(cors({
  * req.body = { user_id: 1, rating: 10, ... }
  */
 app.use(express.json())
+
+app.use(cookieParser())
 
 /**
  * 3. URL-Encoded Parser
