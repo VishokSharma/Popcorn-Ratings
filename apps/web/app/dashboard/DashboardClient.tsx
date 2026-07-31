@@ -3,13 +3,13 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
-const { user, token, loading, logout } = useAuth()
 
 import { useState } from 'react'
 import Link from 'next/link'
 import styles from './dashboard.module.css'
 
 interface Rating {
+  id: number
   title: string
   showName: string
   episodeNumber: string
@@ -17,14 +17,14 @@ interface Rating {
   rating: number
   timestamp: number
   url: string
-  platform?: string
-  genre?: string
+  platform: string
+  genre: string
 }
 
 export default function DashboardClient({ initialRatings }: { initialRatings: Rating[] }) {
 
   const router = useRouter()
-  const { user, token, loading } = useAuth()
+  const { user, token, loading, logout } = useAuth()
 
 
   const [ratings, setRatings] = useState<Rating[]>(initialRatings)
