@@ -186,7 +186,8 @@ router.post('/signup',
             name: newUser.name,
             created_at: newUser.created_at
           },
-          token
+          accessToken,
+          refreshToken  // Send long-lived refresh token
         }
       })
       
@@ -356,7 +357,8 @@ router.post('/signin',
             name: user.name,
             created_at: user.created_at
           },
-          accessToken  // Send short-lived access token
+          accessToken,
+          refreshToken  // Send long-lived refresh token
         }
       })
       
