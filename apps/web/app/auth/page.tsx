@@ -39,17 +39,18 @@ export default function AuthPage() {
         throw new Error(data.error || 'Authentication failed')
       }
 
-      // Success! Wait a moment for cookie to be set, then redirect
-      await new Promise(resolve => setTimeout(resolve, 100))
+      const data = await res.json()
       
-      // Refresh to ensure cookie is picked up
-      router.refresh()
-      
-      // Then redirect
+      // Store access token in memory
+      if (data.data?.accessToken) {
+        const { setAccessToken } = await import('@/lib/api')
+        setAccessToken(data.data.accessToken)
+      }
+
       // Success! Redirect to dashboard
       setTimeout(() => {
         router.push('/dashboard')
-      }, 200)
+      }, 100)
 
     } catch (err: any) {
       setError(err.message || 'Authentication failed')

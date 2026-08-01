@@ -4,7 +4,7 @@
  * ============================================
  * 
  * Handles login requests from browser
- * Calls Express API, gets JWT, sets httpOnly cookie
+ * Calls Express API, gets JWT tokens, sets refresh token cookie
  */
 
 import { cookies } from 'next/headers'
@@ -40,31 +40,36 @@ export async function POST(req: NextRequest) {
     }
 
     const data = await expressRes.json()
-    const token = data.data?.token
+    const accessToken = data.data?.accessToken
+    const refreshToken = data.data?.refreshToken
     const user = data.data?.user
 
-    if (!token) {
+    if (!accessToken || !refreshToken) {
       return NextResponse.json(
-        { success: false, error: 'No token received' },
+        { success: false, error: 'No tokens received' },
         { status: 500 }
       )
     }
 
-    // Set httpOnly cookie on Next.js domain (localhost:3000)
+    // Set refresh token as httpOnly cookie on Next.js domain
     const cookieStore = await cookies()
-    cookieStore.set('auth_token', token, {
-      httpOnly: true,  // Can't be accessed by JavaScript (XSS protection)
-      secure: process.env.NODE_ENV === 'production',  // HTTPS in production
-      sameSite: 'lax',  // CSRF protection
-      path: '/',  // Available across entire app
+    cookieStore.set('refresh_token', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
       maxAge: 7 * 24 * 60 * 60,  // 7 days
     })
 
-    console.log('✅ Login successful, cookie set')
+    console.log('✅ Login successful, refresh token cookie set')
 
+    // Return access token to client (stored in memory)
     return NextResponse.json({
       success: true,
-      data: { user }
+      data: { 
+        user,
+        accessToken  // Client stores this in memory
+      }
     })
 
   } catch (error) {

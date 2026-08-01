@@ -5,6 +5,7 @@
  * 
  * Handles all HTTP requests to Express backend
  * Automatically includes JWT token in requests
+ * Handles token refresh on 401 errors
  */
 
 /**
@@ -45,11 +46,57 @@ export interface ApiResponse<T> {
 }
 
 /**
- * Get JWT token from localStorage
+ * Store for access token (in memory, not localStorage)
+ * Gets cleared on page refresh (good for security)
  */
-function getToken(): string | null {
-  if (typeof window === 'undefined') return null
-  return localStorage.getItem('auth_token')
+let accessToken: string | null = null
+
+/**
+ * Set access token in memory
+ */
+export function setAccessToken(token: string | null) {
+  accessToken = token
+}
+
+/**
+ * Get access token from memory
+ */
+function getAccessToken(): string | null {
+  return accessToken
+}
+
+/**
+ * Refresh access token using refresh token (in cookie)
+ */
+async function refreshAccessToken(): Promise<string | null> {
+  try {
+    console.log('🔄 Refreshing access token...')
+
+    const response = await fetch(`${API_CONFIG.baseURL}/api/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',  // Send refresh token cookie
+    })
+
+    if (!response.ok) {
+      throw new Error('Token refresh failed')
+    }
+
+    const data = await response.json()
+    const newAccessToken = data.data?.accessToken
+
+    if (newAccessToken) {
+      setAccessToken(newAccessToken)
+      console.log('✅ Access token refreshed')
+      return newAccessToken
+    }
+
+    return null
+
+  } catch (error) {
+    console.error('❌ Token refresh error:', error)
+    return null
+  }
 }
 
 /**
@@ -62,33 +109,54 @@ export class ApiClient {
    */
   private static async fetchWithTimeout(
     url: string, 
-    options: RequestInit = {}
+    options: RequestInit = {},
+    retry = true
   ): Promise<Response> {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.timeout)
     
-    // Get JWT token from localStorage
-    const token = getToken()
+    // Get access token from memory
+    const token = getAccessToken()
     
     // Add Authorization header if token exists
-    const headers = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       ...options.headers,
     }
     
     if (token) {
-      (headers as any)['Authorization'] = `Bearer ${token}`
+      headers['Authorization'] = `Bearer ${token}`
     }
     
     try {
-      const response = await fetch(url, {
+      let response = await fetch(url, {
         ...options,
         headers,
         signal: controller.signal,
-        credentials: 'include',  // ← ADD THIS: Send cookies with request
+        credentials: 'include',  // Send refresh token cookie
       })
       
       clearTimeout(timeoutId)
+
+      // If 401 (token expired), try to refresh
+      if (response.status === 401 && retry) {
+        console.log('⚠️ Access token expired, attempting refresh...')
+        
+        const newToken = await refreshAccessToken()
+        
+        if (newToken) {
+          // Retry with new token
+          headers['Authorization'] = `Bearer ${newToken}`
+          
+          response = await fetch(url, {
+            ...options,
+            headers,
+            signal: controller.signal,
+            credentials: 'include',
+          })
+        }
+      }
+      
       return response
       
     } catch (error) {

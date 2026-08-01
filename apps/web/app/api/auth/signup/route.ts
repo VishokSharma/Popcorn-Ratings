@@ -1,7 +1,10 @@
 /**
  * ============================================
- * SIGNUP ROUTE HANDLER
+ * LOGIN ROUTE HANDLER
  * ============================================
+ * 
+ * Handles login requests from browser
+ * Calls Express API, gets JWT tokens, sets refresh token cookie
  */
 
 import { cookies } from 'next/headers'
@@ -10,65 +13,69 @@ import { NextRequest, NextResponse } from 'next/server'
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { email, password, name } = body
+    const { email, password } = body
 
     // Validate input
-    if (!email || !password || !name) {
+    if (!email || !password) {
       return NextResponse.json(
-        { success: false, error: 'Email, password, and name required' },
+        { success: false, error: 'Email and password required' },
         { status: 400 }
       )
     }
 
-    // Call Express API to signup
+    // Call Express API to authenticate
     const apiUrl = process.env.API_INTERNAL_URL || 'http://localhost:5001'
     
     const expressRes = await fetch(`${apiUrl}/api/auth/signup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, name }),
+      body: JSON.stringify({ email, password }),
     })
 
     if (!expressRes.ok) {
-      const errorData = await expressRes.json().catch(() => ({}))
       return NextResponse.json(
-        { success: false, error: errorData.error || 'Signup failed' },
-        { status: expressRes.status }
+        { success: false, error: 'Invalid credentials' },
+        { status: 401 }
       )
     }
 
     const data = await expressRes.json()
-    const token = data.data?.token
+    const accessToken = data.data?.accessToken
+    const refreshToken = data.data?.refreshToken
     const user = data.data?.user
 
-    if (!token) {
+    if (!accessToken || !refreshToken) {
       return NextResponse.json(
-        { success: false, error: 'No token received' },
+        { success: false, error: 'No tokens received' },
         { status: 500 }
       )
     }
 
-    // Set httpOnly cookie
+    // Set refresh token as httpOnly cookie on Next.js domain
     const cookieStore = await cookies()
-    cookieStore.set('auth_token', token, {
+    cookieStore.set('refresh_token', refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
-      maxAge: 7 * 24 * 60 * 60,
+      maxAge: 7 * 24 * 60 * 60,  // 7 days
     })
 
-    console.log('✅ Signup successful, cookie set')
+    console.log('✅ Login successful, refresh token cookie set')
 
+    // Return access token to client (stored in memory)
     return NextResponse.json({
       success: true,
-      data: { user }
+      data: { 
+        user,
+        accessToken  // Client stores this in memory
+      }
     })
 
   } catch (error) {
-    console.error('❌ Signup error:', error)
+    console.error('❌ Login error:', error)
     return NextResponse.json(
-      { success: false, error: 'Signup failed' },
+      { success: false, error: 'Login failed' },
       { status: 500 }
     )
   }

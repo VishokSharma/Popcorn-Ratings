@@ -1,5 +1,10 @@
 import { cookies } from 'next/headers'
 import DashboardClient from './DashboardClient'
+import { setAccessToken } from '@/lib/api'
+
+// This runs on server, but we need to set token for client
+// Token comes from cookies automatically via credentials: include
+// So no need to explicitly set it here - it's handled by refresh logic
 
 interface ApiRating {
   id: number

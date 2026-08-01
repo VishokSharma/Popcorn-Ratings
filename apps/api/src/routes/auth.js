@@ -136,14 +136,27 @@ router.post('/signup',
        * Secret: from environment variable
        * Expiration: 7 days (from env or default)
        */
-      const token = jwt.sign(
+      // Access token (short-lived)
+      const accessToken = jwt.sign(
         {
-          user_id: newUser.id,
-          email: newUser.email
+          user_id: user.id,
+          email: user.email
         },
         process.env.JWT_SECRET,
         {
-          expiresIn: process.env.JWT_EXPIRES_IN || '7d'
+          expiresIn: '15m'  // 15 minutes
+        }
+      )
+
+      // Refresh token (long-lived)
+      const refreshToken = jwt.sign(
+        {
+          user_id: user.id,
+          type: 'refresh'
+        },
+        process.env.JWT_SECRET,
+        {
+          expiresIn: '7d'  // 7 days
         }
       )
       
@@ -284,14 +297,27 @@ router.post('/signin',
       /**
        * STEP 4: Create JWT token
        */
-      const token = jwt.sign(
+      // Access token (short-lived)
+      const accessToken = jwt.sign(
         {
           user_id: user.id,
           email: user.email
         },
         process.env.JWT_SECRET,
         {
-          expiresIn: process.env.JWT_EXPIRES_IN || '7d'
+          expiresIn: '15m'  // 15 minutes
+        }
+      )
+
+      // Refresh token (long-lived)
+      const refreshToken = jwt.sign(
+        {
+          user_id: user.id,
+          type: 'refresh'
+        },
+        process.env.JWT_SECRET,
+        {
+          expiresIn: '7d'  // 7 days
         }
       )
       
@@ -312,6 +338,15 @@ router.post('/signin',
         domain: 'localhost'  // Explicitly set domain
       })
 
+      // Set refresh token as httpOnly cookie (secure)
+      res.cookie('refresh_token', refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 7 * 24 * 60 * 60 * 1000  // 7 days
+      })
+
       res.json({
         success: true,
         data: {
@@ -321,7 +356,7 @@ router.post('/signin',
             name: user.name,
             created_at: user.created_at
           },
-          token  // Still send in JSON for client-side backup
+          accessToken  // Send short-lived access token
         }
       })
       
@@ -398,5 +433,68 @@ router.get('/me', authenticateToken, async (req, res) => {
     })
   }
 })
+
+/**
+ * ============================================
+ * POST /api/auth/refresh
+ * ============================================
+ * 
+ * Refresh an expired access token
+ * Uses refresh token from cookie
+ */
+router.post('/refresh', async (req, res) => {
+  try {
+    // Get refresh token from cookie
+    const refreshToken = req.cookies?.refresh_token
+
+    if (!refreshToken) {
+      return res.status(401).json({
+        success: false,
+        error: 'No refresh token found'
+      })
+    }
+
+    // Verify refresh token
+    let decoded
+    try {
+      decoded = jwt.verify(refreshToken, process.env.JWT_SECRET)
+    } catch (error) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid or expired refresh token'
+      })
+    }
+
+    // Generate new access token
+    const newAccessToken = jwt.sign(
+      {
+        user_id: decoded.user_id,
+        email: decoded.email
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: '15m'
+      }
+    )
+
+    console.log('✅ Access token refreshed for user', decoded.user_id)
+
+    res.json({
+      success: true,
+      data: {
+        accessToken: newAccessToken
+      }
+    })
+
+  } catch (error) {
+    console.error('❌ Refresh token error:', error)
+    res.status(500).json({
+      success: false,
+      error: 'Failed to refresh token'
+    })
+  }
+})
+
+
 
 module.exports = router
