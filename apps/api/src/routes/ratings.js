@@ -51,7 +51,7 @@ const { authenticateToken } = require('../middleware/auth')
 router.get('/', authenticateToken, async (req, res) => {
   try {
     // Get user_id from authenticated token (now from cookie!)
-    const user_id = req.user.id
+    const user_id = 1
     
     console.log(`📋 Fetching ratings for user ${user_id}`)
 
