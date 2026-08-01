@@ -461,7 +461,6 @@
 }
 
 .ratingCard {
-  color: #1a1a1a; 
   background: linear-gradient(135deg, #f4e4c1 0%, #d4b896 100%);
   border: 4px solid #8b0000;
   border-radius: 12px;
@@ -474,16 +473,46 @@
 }
 
 .showTitle {
-  color: #1a1a1a;
-  font-weight: bold;
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: #2c1810;
+  margin-bottom: 4px;
+  font-family: 'Courier New', monospace;
 }
 
 .episodeInfo {
-  color: #333;
+  font-size: 0.85rem;
+  color: #5a3825;
+  font-style: italic;
+  margin-bottom: 8px;
+  font-family: 'Courier New', monospace;
+}
+
+.ratingStars {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.ratingNumber {
+  font-size: 0.9rem;
+  color: #2c1810;
+  font-weight: bold;
+  font-family: 'Courier New', monospace;
 }
 
 .platform {
-  color: #444;
+  font-size: 0.8rem;
+  color: #5a3825;
+  font-family: 'Courier New', monospace;
+  margin-bottom: 4px;
+}
+
+.date {
+  font-size: 0.8rem;
+  color: #5a3825;
+  font-family: 'Courier New', monospace;
 }
 
 .ratingCard:hover {
@@ -495,19 +524,33 @@
 }
 
 .cardThumbnail {
-  width: 60px;
-  height: 80px;
-  background: rgba(139, 0, 0, 0.15);
-  border: 3px solid #8b0000;
-  border-radius: 6px;
+  width: 80px;
+  height: 120px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 32px;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 3px solid #8b0000;
+}
+
+.posterImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 5px;
+  transition: transform 0.3s ease;
+}
+
+.posterImage:hover {
+  transform: scale(1.05);
 }
 
 .thumbnailIcon {
-  font-size: 2rem;
-  opacity: 0.5;
+  font-size: 32px;
 }
 
 .cardMiddle {

@@ -8,7 +8,9 @@ const elements = {
   episodeInfo: document.getElementById('episode-info'),
   ratingValue: document.getElementById('rating-value'),
   ratingCount: document.getElementById('rating-count'),
-  dashboardBtn: document.getElementById('dashboard-btn')
+  dashboardBtn: document.getElementById('dashboard-btn'),
+  posterImage: document.getElementById('poster-image'),  // ← ADD THIS
+  placeholderIcon: document.getElementById('placeholder-icon')  // ← ADD THIS
 };
 
 // Initialize
@@ -73,37 +75,62 @@ async function displayShowInfo(showData) {
 }
 
 /**
- * Calculate and display rating for current show
+ * Fetch poster from TMDB API
  */
-async function displayRating(showName) {
+async function fetchPoster(showName) {
   try {
-    const result = await chrome.storage.local.get(['ratings']);
-    const allRatings = result.ratings || [];
+    const TMDB_API_KEY = 'a0345fb274682b8789f29be371c3bfad';  // Your API key
+    const url = `https://api.themoviedb.org/3/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(showName)}`;
     
-    // Filter ratings for this show
-    const showRatings = allRatings.filter(r => 
-      (r.showName && r.showName === showName) || 
-      (r.title && r.title.includes(showName))
-    );
+    const response = await fetch(url);
+    const data = await response.json();
     
-    if (showRatings.length === 0) {
-      elements.ratingValue.textContent = '-';
-      elements.ratingCount.textContent = '(0)';
-      return;
+    if (data.results && data.results.length > 0) {
+      const poster = data.results[0].poster_path;
+      if (poster) {
+        return `https://image.tmdb.org/t/p/w500${poster}`;
+      }
     }
     
-    // Calculate average
-    const sum = showRatings.reduce((acc, r) => acc + r.rating, 0);
-    const avg = sum / showRatings.length;
-    
-    elements.ratingValue.textContent = avg.toFixed(1);
-    elements.ratingCount.textContent = `(${showRatings.length})`;
+    return null;
     
   } catch (error) {
-    console.error('Error calculating rating:', error);
-    elements.ratingValue.textContent = '-';
-    elements.ratingCount.textContent = '(0)';
+    console.error('Error fetching poster:', error);
+    return null;
   }
+}
+
+/**
+ * Display show information
+ */
+async function displayShowInfo(showData) {
+  const showName = showData.showName || showData.title || 'Unknown Show';
+  
+  // Show title (big text)
+  elements.showTitle.textContent = showName;
+  
+  // Episode info (smaller text)
+  if (showData.episodeNumber && showData.episodeTitle) {
+    elements.episodeInfo.textContent = `${showData.episodeNumber}: ${showData.episodeTitle}`;
+  } else if (showData.episodeNumber) {
+    elements.episodeInfo.textContent = showData.episodeNumber;
+  } else {
+    elements.episodeInfo.textContent = 'Movie';
+  }
+  
+  // Fetch and display poster
+  const posterUrl = await fetchPoster(showName);
+  if (posterUrl) {
+    elements.posterImage.src = posterUrl;
+    elements.posterImage.style.display = 'block';
+    elements.placeholderIcon.style.display = 'none';
+  } else {
+    elements.posterImage.style.display = 'none';
+    elements.placeholderIcon.style.display = 'block';
+  }
+  
+  // Get ratings from storage and calculate average
+  await displayRating(showName);
 }
 
 /**
