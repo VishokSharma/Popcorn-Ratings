@@ -7,8 +7,15 @@
  * Fetches show/movie data including posters
  */
 
-const TMDB_API_KEY = process.env.TMDB_API_KEY
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3'
+
+function getApiKey() {
+  const key = process.env.TMDB_API_KEY
+  if (!key) {
+    throw new Error('TMDB_API_KEY not configured')
+  }
+  return key
+}
 
 /**
  * Search for a TV show or movie
@@ -27,7 +34,7 @@ async function searchShow(query) {
 
     // Search for TV shows first
     const tvResponse = await fetch(
-      `${TMDB_BASE_URL}/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}`
+      `${TMDB_BASE_URL}/search/tv?api_key=${getApiKey()}&query=${encodeURIComponent(query)}`
     )
 
     if (!tvResponse.ok) {
@@ -52,7 +59,7 @@ async function searchShow(query) {
 
     // If no TV show, try movies
     const movieResponse = await fetch(
-      `${TMDB_BASE_URL}/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}`
+      `${TMDB_BASE_URL}/search/movie?api_key=${getApiKey()}&query=${encodeURIComponent(query)}`
     )
 
     if (!movieResponse.ok) {

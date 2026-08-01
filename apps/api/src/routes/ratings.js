@@ -56,8 +56,8 @@ router.get('/', authenticateToken, async (req, res) => {
     console.log(`📋 Fetching ratings for user ${user_id}`)
 
     const result = await pool.query(
-      `SELECT id, user_id, show_name, episode_number, episode_title, rating, platform, genre, url, created_at
-       FROM ratings 
+      `SELECT id, user_id, show_name, episode_number, episode_title, rating, platform, genre, url, created_at, tmdb_id, tmdb_poster_url, tmdb_type
+       FROM ratings
        WHERE user_id = $1
        ORDER BY created_at DESC`,
       [user_id]
@@ -109,13 +109,6 @@ router.get('/', authenticateToken, async (req, res) => {
  */
 router.post('/', authenticateToken, async (req, res) => {
   try {
-    /**
-     * Extract data from request body
-     * 
-     * req.body is parsed by express.json() middleware
-     * (configured in server.js)
-     */
-    // Get user_id from authenticated token (not request body)
     const user_id = req.user.id
 
     const {
@@ -135,98 +128,51 @@ router.post('/', authenticateToken, async (req, res) => {
       })
     }
 
-    /**
-     * VALIDATION: Check rating is between 1-10
-     * 
-     * Database has CHECK constraint too, but validating
-     * in application gives better error message
-     */
     if (rating < 1 || rating > 10) {
       return res.status(400).json({
         success: false,
-        error: 'rating must be between 1 and 10'
+        error: 'Rating must be between 1 and 10'
       })
     }
 
-    /**
-     * INSERT INTO DATABASE
-     * 
-     * RETURNING *:
-     * Returns the created row (including auto-generated id)
-     * Without RETURNING, we'd only know success/failure
-     * With RETURNING, we get the full created rating
-     * 
-     * PARAMETERIZED QUERY:
-     * $1, $2, $3... are replaced with values from array
-     * Safe from SQL injection
-     */
+    // Fetch poster from TMDB
+    const tmdbService = require('../services/tmdb')
+    const tmdbData = await tmdbService.searchShow(show_name)
+
     const result = await pool.query(
-      `INSERT INTO ratings (
-        user_id,
-        show_name,
-        episode_number,
-        episode_title,
-        rating,
-        platform,
-        genre,
-        url
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-      RETURNING *`,
+      `INSERT INTO ratings (user_id, show_name, episode_number, episode_title, rating, platform, genre, url, tmdb_id, tmdb_poster_url, tmdb_type)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+       RETURNING *`,
       [
         user_id,
         show_name,
-        episode_number || null,  // Convert undefined to null
+        episode_number || null,
         episode_title || null,
         rating,
         platform || 'Netflix',
         genre || null,
-        url || null
+        url || null,
+        tmdbData?.tmdb_id || null,
+        tmdbData?.poster_url || null,
+        tmdbData?.tmdb_type || null
       ]
     )
 
-    /**
-     * RETURN SUCCESS RESPONSE
-     * 
-     * Status 201 = Created (resource successfully created)
-     * result.rows[0] = the newly created rating
-     */
+    console.log(`✅ Rating created with poster for: ${show_name}`)
+
     res.status(201).json({
       success: true,
       data: result.rows[0]
     })
 
   } catch (error) {
-    /**
-     * ERROR HANDLING
-     * 
-     * Common errors:
-     * - Foreign key violation (user_id doesn't exist)
-     * - Check constraint violation (rating outside 1-10)
-     * - Database connection lost
-     */
-    console.error('❌ Error creating rating:', error)
-    
-    /**
-     * Check for specific PostgreSQL errors
-     * error.code = PostgreSQL error code
-     * 
-     * 23503 = Foreign key violation
-     * 23514 = Check constraint violation
-     */
-    if (error.code === '23503') {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid user_id'
-      })
-    }
-
+    console.error('❌ Error creating rating:', error.message)
     res.status(500).json({
       success: false,
       error: 'Failed to create rating'
     })
   }
 })
-
 
 
 /**

@@ -1,10 +1,5 @@
 import { cookies } from 'next/headers'
 import DashboardClient from './DashboardClient'
-import { setAccessToken } from '@/lib/api'
-
-// This runs on server, but we need to set token for client
-// Token comes from cookies automatically via credentials: include
-// So no need to explicitly set it here - it's handled by refresh logic
 
 interface ApiRating {
   id: number
@@ -17,6 +12,9 @@ interface ApiRating {
   genre: string | null
   url: string | null
   created_at: string
+  tmdb_id?: number
+  tmdb_poster_url?: string
+  tmdb_type?: string
 }
 
 interface Rating {
@@ -30,39 +28,63 @@ interface Rating {
   url: string
   platform: string
   genre: string
+  posterUrl?: string
 }
 
 export default async function Dashboard() {
   const cookieStore = await cookies()
-  const token = cookieStore.get('auth_token')?.value
+  const refreshToken = cookieStore.get('refresh_token')?.value
 
-  // If no token, just return empty dashboard
-  // DashboardClient will handle the redirect
-  if (!token) {
-    console.log('⚠️ No auth token, rendering empty dashboard')
+  // If no refresh token, render empty dashboard (client will redirect to auth)
+  if (!refreshToken) {
+    console.log('⚠️ No refresh token found')
     return <DashboardClient initialRatings={[]} isAuthenticated={false} />
   }
 
-  console.log('✅ Auth token found, fetching ratings...')
-
   try {
+    // Use refresh token to get new access token
     const apiUrl = process.env.API_INTERNAL_URL || 'http://localhost:5001'
     
-    const res = await fetch(`${apiUrl}/api/ratings`, {
+    const refreshRes = await fetch(`${apiUrl}/api/auth/refresh`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cookie': `refresh_token=${refreshToken}`
+      },
+      cache: 'no-store',
+    })
+
+    if (!refreshRes.ok) {
+      console.log('⚠️ Token refresh failed')
+      return <DashboardClient initialRatings={[]} isAuthenticated={false} />
+    }
+
+    const refreshData = await refreshRes.json()
+    const accessToken = refreshData.data?.accessToken
+
+    if (!accessToken) {
+      console.log('⚠️ No access token in refresh response')
+      return <DashboardClient initialRatings={[]} isAuthenticated={false} />
+    }
+
+    console.log('✅ Access token obtained via refresh')
+
+    // Now fetch ratings with new access token
+    const ratingsRes = await fetch(`${apiUrl}/api/ratings`, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${token}`,
+        'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
       },
       cache: 'no-store',
     })
 
-    if (!res.ok) {
-      console.error(`❌ Failed to fetch ratings: ${res.status}`)
+    if (!ratingsRes.ok) {
+      console.error(`❌ Failed to fetch ratings: ${ratingsRes.status}`)
       return <DashboardClient initialRatings={[]} isAuthenticated={true} />
     }
 
-    const apiResponse = await res.json()
+    const apiResponse = await ratingsRes.json()
     const apiRatings: ApiRating[] = apiResponse.data || []
 
     const ratings: Rating[] = apiRatings.map((r) => ({
@@ -76,6 +98,7 @@ export default async function Dashboard() {
       url: r.url || '',
       platform: r.platform,
       genre: r.genre || '',
+      posterUrl: r.tmdb_poster_url || undefined
     }))
 
     console.log(`✅ Fetched ${ratings.length} ratings`)

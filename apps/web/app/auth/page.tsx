@@ -20,7 +20,6 @@ export default function AuthPage() {
     setLoading(true)
 
     try {
-      // Call Next.js Route Handler (not Express directly!)
       const endpoint = isSignUp ? '/api/auth/signup' : '/api/auth/login'
       
       const res = await fetch(endpoint, {
@@ -31,7 +30,7 @@ export default function AuthPage() {
           password,
           ...(isSignUp && { name })
         }),
-        credentials: 'include',  // Important: send cookies
+        credentials: 'include',
       })
 
       if (!res.ok) {
@@ -43,11 +42,16 @@ export default function AuthPage() {
       
       // Store access token in memory
       if (data.data?.accessToken) {
+        // Import at top of function to ensure it's available
         const { setAccessToken } = await import('@/lib/api')
         setAccessToken(data.data.accessToken)
+        console.log('✅ Access token stored')
       }
 
-      // Success! Redirect to dashboard
+      // Refresh to ensure server recognizes auth
+      router.refresh()
+      
+      // Redirect
       setTimeout(() => {
         router.push('/dashboard')
       }, 100)

@@ -16,6 +16,7 @@ interface Rating {
   url: string
   platform: string
   genre: string
+  posterUrl?: string
 }
 
 export default function DashboardClient({ 
@@ -326,41 +327,48 @@ export default function DashboardClient({
             <div className={styles.ratingsList}>
               {filteredRatings.slice(0, 10).map((rating) => (
                 <div key={rating.id || rating.timestamp} className={styles.ratingCard}>
-                  
                   <div className={styles.cardLeft}>
                     <div className={styles.cardThumbnail}>
-                      <span className={styles.thumbnailIcon}>🎬</span>
+                      {rating.posterUrl ? (
+                        <img 
+                          src={rating.posterUrl} 
+                          alt={rating.showName}
+                          className={styles.posterImage}
+                        />
+                      ) : (
+                        <span className={styles.thumbnailIcon}>🎬</span>
+                      )}
                     </div>
                   </div>
 
-                  <div className={styles.cardMiddle}>
-                    <h3 className={styles.cardTitle}>{rating.showName}</h3>
-                    <p className={styles.cardEpisode}>
-                      {rating.episodeNumber}: {rating.episodeTitle}
-                    </p>
-                    <div className={styles.cardMeta}>
-                      <span className={styles.platformBadge}>{rating.platform}</span>
-                      <span className={styles.cardDate}>{formatDate(rating.timestamp)}</span>
+                  <div className={styles.cardContent}>
+                    <h3 className={styles.showTitle}>{rating.showName}</h3>
+                    
+                    {rating.episodeNumber && (
+                      <p className={styles.episodeInfo}>
+                        {rating.episodeNumber}
+                        {rating.episodeTitle && ` - ${rating.episodeTitle}`}
+                      </p>
+                    )}
+                    
+                    <div className={styles.ratingStars}>
+                      {'⭐'.repeat(rating.rating)}
+                      <span className={styles.ratingNumber}>{rating.rating}/10</span>
                     </div>
+                    
+                    <p className={styles.platform}>{rating.platform}</p>
+                    <p className={styles.date}>
+                      {new Date(rating.timestamp).toLocaleDateString('en-IN', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                      })}
+                    </p>
                   </div>
 
                   <div className={styles.cardRight}>
-                    <div className={styles.cardRating}>
-                      <span className={styles.ratingNum}>{rating.rating}</span>
-                      <span className={styles.ratingStar}>⭐</span>
-                    </div>
-                    <div className={styles.cardActions}>
-                      <button className={styles.actionIcon} title="Edit">✏️</button>
-                      <button 
-                        className={styles.actionIcon} 
-                        title="Delete"
-                        onClick={() => handleDelete(rating.timestamp)}
-                      >
-                        🗑️
-                      </button>
-                    </div>
+                    <button className={styles.deleteBtn}>✕</button>
                   </div>
-
                 </div>
               ))}
             </div>
