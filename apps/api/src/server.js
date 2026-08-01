@@ -213,6 +213,9 @@ app.use('/api/ratings', ratingsRoutes)
 const authRoutes = require('./routes/auth')
 app.use('/api/auth', authRoutes)
 
+const tmdbRoutes = require('./routes/tmdb')
+app.use('/api/tmdb', tmdbRoutes)
+
 /**
  * 404 Handler - Catch-all for undefined routes
  * 
