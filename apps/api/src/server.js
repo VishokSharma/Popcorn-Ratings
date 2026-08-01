@@ -91,6 +91,25 @@ app.use(cors({
   maxAge: 86400  // 24 hours
 }))
 
+// Security Headers
+app.use((req, res, next) => {
+  // Prevent clickjacking
+  res.setHeader('X-Frame-Options', 'DENY')
+  
+  // Prevent MIME type sniffing
+  res.setHeader('X-Content-Type-Options', 'nosniff')
+  
+  // Enable XSS protection
+  res.setHeader('X-XSS-Protection', '1; mode=block')
+  
+  // Content Security Policy
+  res.setHeader('Content-Security-Policy', "default-src 'self'")
+  
+  // Referrer Policy
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
+  
+  next()
+})
 /**
  * 2. JSON Body Parser
  * 
@@ -218,6 +237,36 @@ app.use((req, res) => {
  * Must be registered LAST
  */
 app.use(errorHandler)
+
+// Environment-based configuration
+const isProduction = process.env.NODE_ENV === 'production'
+
+if (isProduction) {
+  console.log('🔐 Running in PRODUCTION mode')
+  console.log('⚠️ Make sure all secrets are set securely')
+} else {
+  console.log('🔧 Running in DEVELOPMENT mode')
+}
+
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error('❌ Unhandled error:', err)
+
+  if (isProduction) {
+    // In production, don't expose error details
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    })
+  } else {
+    // In development, show full error
+    res.status(500).json({
+      success: false,
+      error: err.message,
+      stack: err.stack
+    })
+  }
+})
 
 /**
  * ============================================

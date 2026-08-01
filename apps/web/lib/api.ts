@@ -120,10 +120,13 @@ export class ApiClient {
     
     // Add Authorization header if token exists
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    }
-    
+  'Content-Type': 'application/json',
+}
+
+// Safely merge existing headers
+  if (options.headers && typeof options.headers === 'object') {
+    Object.assign(headers, options.headers)
+  }
     if (token) {
       headers['Authorization'] = `Bearer ${token}`
     }
