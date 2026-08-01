@@ -168,13 +168,13 @@ router.post('/signup',
        * Don't return password_hash!
        */
       // Set HTTP-only cookie with JWT
-      res.cookie('auth_token', token, {
+      res.cookie('refresh_token', refreshToken, {
         httpOnly: true,
-        secure: false,  // Allow http in development
+        secure: false,
         sameSite: 'lax',
         maxAge: 7 * 24 * 60 * 60 * 1000,
         path: '/',
-        domain: 'localhost'  // Explicitly set domain
+        domain: 'localhost'
       })
 
       res.status(201).json({
@@ -330,13 +330,13 @@ router.post('/signin',
        * Don't return password_hash!
        */
       // Set HTTP-only cookie with JWT
-      res.cookie('auth_token', token, {
+      res.cookie('refresh_token', refreshToken, {
         httpOnly: true,
-        secure: false,  // Allow http in development
+        secure: false,
         sameSite: 'lax',
         maxAge: 7 * 24 * 60 * 60 * 1000,
         path: '/',
-        domain: 'localhost'  // Explicitly set domain
+        domain: 'localhost'
       })
 
       // Set refresh token as httpOnly cookie (secure)
