@@ -139,8 +139,8 @@ router.post('/signup',
       // Access token (short-lived)
       const accessToken = jwt.sign(
         {
-          user_id: user.id,
-          email: user.email
+          user_id: newUser.id,
+          email: newUser.email
         },
         process.env.JWT_SECRET,
         {
@@ -151,7 +151,7 @@ router.post('/signup',
       // Refresh token (long-lived)
       const refreshToken = jwt.sign(
         {
-          user_id: user.id,
+          user_id: newUser.id,
           type: 'refresh'
         },
         process.env.JWT_SECRET,
