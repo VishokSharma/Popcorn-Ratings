@@ -138,7 +138,7 @@ class APIService {
       const data = await response.json()
       
       // Save token and user
-      await saveToken(data.data.token)
+      await saveToken(data.data.accessToken)
       await saveUser(data.data.user)
       
       console.log('✅ Signin successful')
@@ -175,7 +175,7 @@ class APIService {
       const data = await response.json()
       
       // Save token and user
-      await saveToken(data.data.token)
+      await saveToken(data.data.accessToken)
       await saveUser(data.data.user)
       
       console.log('✅ Signup successful')
