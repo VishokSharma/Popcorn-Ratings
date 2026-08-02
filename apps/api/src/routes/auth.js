@@ -329,15 +329,6 @@ router.post('/signin',
        * 
        * Don't return password_hash!
        */
-      // Set HTTP-only cookie with JWT
-      res.cookie('refresh_token', refreshToken, {
-        httpOnly: true,
-        secure: false,
-        sameSite: 'lax',
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-        path: '/',
-        domain: 'localhost'
-      })
 
       // Set refresh token as httpOnly cookie (secure)
       res.cookie('refresh_token', refreshToken, {
