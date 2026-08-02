@@ -13,7 +13,7 @@ import { NextRequest, NextResponse } from 'next/server'
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { email, password } = body
+    const { email, password, name } = body
 
     // Validate input
     if (!email || !password) {
@@ -29,13 +29,14 @@ export async function POST(req: NextRequest) {
     const expressRes = await fetch(`${apiUrl}/api/auth/signup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, name }),
     })
 
     if (!expressRes.ok) {
+      const errorData = await expressRes.json().catch(() => ({}))
       return NextResponse.json(
-        { success: false, error: 'Invalid credentials' },
-        { status: 401 }
+        { success: false, error: errorData.error || 'Signup failed' },
+        { status: expressRes.status }
       )
     }
 
@@ -61,7 +62,7 @@ export async function POST(req: NextRequest) {
       maxAge: 7 * 24 * 60 * 60,  // 7 days
     })
 
-    console.log('✅ Login successful, refresh token cookie set')
+    console.log('✅ Signup successful, refresh token cookie set')
 
     // Return access token to client (stored in memory)
     return NextResponse.json({
@@ -73,9 +74,9 @@ export async function POST(req: NextRequest) {
     })
 
   } catch (error) {
-    console.error('❌ Login error:', error)
+    console.error('❌ Signup error:', error)
     return NextResponse.json(
-      { success: false, error: 'Login failed' },
+      { success: false, error: 'Signup failed' },
       { status: 500 }
     )
   }
