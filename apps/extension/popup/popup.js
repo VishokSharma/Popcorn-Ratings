@@ -54,25 +54,6 @@ async function loadCurrentShow() {
   }
 }
 
-/**
- * Display show information
- */
-async function displayShowInfo(showData) {
-  // Show title (big text)
-  elements.showTitle.textContent = showData.showName || showData.title || 'Unknown Show';
-  
-  // Episode info (smaller text)
-  if (showData.episodeNumber && showData.episodeTitle) {
-    elements.episodeInfo.textContent = `${showData.episodeNumber}: ${showData.episodeTitle}`;
-  } else if (showData.episodeNumber) {
-    elements.episodeInfo.textContent = showData.episodeNumber;
-  } else {
-    elements.episodeInfo.textContent = 'Movie';
-  }
-  
-  // Get ratings from storage and calculate average
-  await displayRating(showData.showName || showData.title);
-}
 
 /**
  * Fetch poster from TMDB API
@@ -131,6 +112,40 @@ async function displayShowInfo(showData) {
   
   // Get ratings from storage and calculate average
   await displayRating(showName);
+}
+
+/**
+ * Calculate and display rating for current show
+ */
+async function displayRating(showName) {
+  try {
+    const result = await chrome.storage.local.get(['ratings']);
+    const allRatings = result.ratings || [];
+    
+    // Filter ratings for this show
+    const showRatings = allRatings.filter(r => 
+      (r.showName && r.showName === showName) || 
+      (r.title && r.title.includes(showName))
+    );
+    
+    if (showRatings.length === 0) {
+      elements.ratingValue.textContent = '-';
+      elements.ratingCount.textContent = '(0)';
+      return;
+    }
+    
+    // Calculate average
+    const sum = showRatings.reduce((acc, r) => acc + r.rating, 0);
+    const avg = sum / showRatings.length;
+    
+    elements.ratingValue.textContent = avg.toFixed(1);
+    elements.ratingCount.textContent = `(${showRatings.length})`;
+    
+  } catch (error) {
+    console.error('Error calculating rating:', error);
+    elements.ratingValue.textContent = '-';
+    elements.ratingCount.textContent = '(0)';
+  }
 }
 
 /**
