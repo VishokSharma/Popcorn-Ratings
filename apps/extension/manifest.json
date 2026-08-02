@@ -26,7 +26,8 @@
     ],  
 
     "host_permissions": [
-      "*://*.netflix.com/*"
+      "*://*.netflix.com/*",
+      "http://localhost:3000/*"
     ],
 
    "content_scripts": [

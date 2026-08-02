@@ -32,24 +32,18 @@ const SYNC_CONFIG = {
   // Base delay for exponential backoff (5 seconds)
   baseDelay: 5000
 }
+let isSyncing = false
 
-/**
- * ============================================
- * SYNC PENDING RATINGS
- * ============================================
- * 
- * Main sync function - finds pending ratings and syncs them
- */
 async function syncPendingRatings() {
+  if (isSyncing) {
+    console.log('⏭️ Sync already in progress, skipping this trigger')
+    return
+  }
+  isSyncing = true
+
   console.log('🔄 Starting sync process...')
   
   try {
-    /**
-     * Get all pending ratings from storage
-     * 
-     * Pending = status is 'pending' or 'failed'
-     * (Already synced ratings are skipped)
-     */
     const result = await chrome.storage.local.get(['ratings'])
     const allRatings = result.ratings || []
     
@@ -64,11 +58,6 @@ async function syncPendingRatings() {
     
     console.log(`📤 Found ${pendingRatings.length} ratings to sync`)
     
-    /**
-     * Check if API is reachable
-     * 
-     * No point trying to sync if offline
-     */
     const isOnline = await checkAPIHealth()
     
     if (!isOnline) {
@@ -76,16 +65,8 @@ async function syncPendingRatings() {
       return
     }
     
-    /**
-     * Sync each pending rating
-     * 
-     * Process sequentially (not parallel) to avoid
-     * overwhelming API with burst of requests
-     */
     for (const rating of pendingRatings) {
       await syncSingleRating(rating)
-      
-      // Small delay between requests (100ms)
       await new Promise(resolve => setTimeout(resolve, 100))
     }
     
@@ -93,35 +74,73 @@ async function syncPendingRatings() {
     
   } catch (error) {
     console.error('❌ Sync process error:', error)
+  } finally {
+    isSyncing = false
   }
+}
+/**
+ * Get a fresh access token before syncing.
+ * Tries the website's refresh_token cookie first (works even if
+ * the popup was never opened this session). Falls back to
+ * whatever's already in extension storage if that fails.
+ */
+async function getFreshAccessToken() {
+  try {
+    const refreshRes = await fetch('http://localhost:3000/api/auth/refresh', {
+      method: 'POST',
+      credentials: 'include'
+    })
+
+    if (refreshRes.ok) {
+      const refreshData = await refreshRes.json()
+      const token = refreshData.data?.accessToken
+
+      if (token) {
+        await new Promise((resolve) => {
+          chrome.storage.local.set({ auth_token: token }, resolve)
+        })
+        return token
+      }
+    }
+  } catch (error) {
+    console.log('⚠️ Could not refresh token, falling back to stored token:', error.message)
+  }
+
+  // Fallback: use whatever's already stored (may be stale, but better than nothing)
+  const stored = await new Promise((resolve) => {
+    chrome.storage.local.get(['auth_token'], resolve)
+  })
+
+  return stored.auth_token || null
 }
 
 /**
- * Sync a single rating
+ * ============================================
+ * SYNC PENDING RATINGS
+ * ============================================
  * 
- * @param {object} rating - Rating object to sync
+ * Main sync function - finds pending ratings and syncs them
  */
 async function syncSingleRating(rating) {
   try {
-    console.log(`📡 Syncing rating: ${rating.showName}`)
+    console.log(`📡 Syncing rating: ${rating.show_name}`)
     
     await updateRatingStatus(rating.id, 'syncing')
     
-    // Get JWT token from storage
-    const tokenResult = await new Promise((resolve) => {
-      chrome.storage.local.get(['auth_token'], resolve)
-    })
-    
-    const token = tokenResult.auth_token
+    // Always get a fresh token before syncing — don't rely on
+    // whatever the popup last saved, since access tokens only
+    // last 15 minutes and background sync runs on its own timer
+    const token = await getFreshAccessToken()
     
     if (!token) {
       throw new Error('Not authenticated - no token found')
     }
     
+    // Ratings are already stored in the exact shape the API expects
     const ratingData = {
-      show_name: rating.showName,
-      episode_number: rating.episodeNumber,
-      episode_title: rating.episodeTitle,
+      show_name: rating.show_name,
+      episode_number: rating.episode_number,
+      episode_title: rating.episode_title,
       rating: rating.rating,
       platform: rating.platform || 'Netflix',
       genre: rating.genre,
@@ -134,7 +153,7 @@ async function syncSingleRating(rating) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`  // ← ADD JWT TOKEN
+        'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify(ratingData)
     })
@@ -150,10 +169,10 @@ async function syncSingleRating(rating) {
       databaseId: result.data?.id
     })
     
-    console.log(`✅ Synced: ${rating.showName}`)
+    console.log(`✅ Synced: ${rating.show_name}`)
     
   } catch (error) {
-    console.error(`❌ Failed to sync ${rating.showName}:`, error.message)
+    console.error(`❌ Failed to sync ${rating.show_name}:`, error.message)
     
     const retryCount = (rating.retryCount || 0) + 1
     

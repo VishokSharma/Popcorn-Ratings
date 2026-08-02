@@ -2,6 +2,9 @@
  * Popcorn Ratings - Popup Script
  */
 
+const WEB_APP_URL = 'http://localhost:3000';
+const API_URL = 'http://localhost:5001';
+
 // DOM Elements
 const elements = {
   showTitle: document.getElementById('show-title'),
@@ -9,16 +12,106 @@ const elements = {
   ratingValue: document.getElementById('rating-value'),
   ratingCount: document.getElementById('rating-count'),
   dashboardBtn: document.getElementById('dashboard-btn'),
-  posterImage: document.getElementById('poster-image'),  // ← ADD THIS
-  placeholderIcon: document.getElementById('placeholder-icon')  // ← ADD THIS
+  posterImage: document.getElementById('poster-image'),
+  placeholderIcon: document.getElementById('placeholder-icon'),
+  authLoggedOut: document.getElementById('auth-logged-out'),
+  authLoggedIn: document.getElementById('auth-logged-in'),
+  authUserName: document.getElementById('auth-user-name'),
+  loginBtn: document.getElementById('login-btn'),
+  logoutBtn: document.getElementById('logout-btn')
 };
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('🍿 Popcorn Ratings popup loaded');
+  await checkAuthStatus();
   await loadCurrentShow();
   attachEventListeners();
 });
+
+/**
+ * Check if user is logged in.
+ * First checks local extension storage (fast path — already synced before).
+ * If not found, tries to pick up the session from the website's
+ * refresh_token cookie (user may have just logged in on the site).
+ */
+async function checkAuthStatus() {
+  const stored = await new Promise((resolve) => {
+    chrome.storage.local.get(['auth_token', 'auth_user'], resolve);
+  });
+
+  if (stored.auth_token && stored.auth_user) {
+    showLoggedInState(stored.auth_user);
+    return;
+  }
+
+  await syncSessionFromWebsite();
+}
+
+/**
+ * Pick up an existing website login session.
+ * Calls the Next.js refresh endpoint (browser should auto-attach the
+ * refresh_token cookie since we have host_permissions for the site),
+ * then fetches the user's profile from the API with the new token.
+ */
+async function syncSessionFromWebsite() {
+  try {
+    const refreshRes = await fetch(`${WEB_APP_URL}/api/auth/refresh`, {
+      method: 'POST',
+      credentials: 'include'
+    });
+
+    if (!refreshRes.ok) {
+      console.log('📴 No active website session found');
+      showLoggedOutState();
+      return;
+    }
+
+    const refreshData = await refreshRes.json();
+    const accessToken = refreshData.data?.accessToken;
+
+    if (!accessToken) {
+      showLoggedOutState();
+      return;
+    }
+
+    const meRes = await fetch(`${API_URL}/api/auth/me`, {
+      headers: { 'Authorization': `Bearer ${accessToken}` }
+    });
+
+    if (!meRes.ok) {
+      showLoggedOutState();
+      return;
+    }
+
+    const meData = await meRes.json();
+    const user = meData.data;
+
+    // Save to extension storage — background sync and content script
+    // already read auth_token from here, nothing else needs to change
+    await new Promise((resolve) => {
+      chrome.storage.local.set({ auth_token: accessToken, auth_user: user }, resolve);
+    });
+
+    console.log('✅ Session synced from website:', user.email);
+    showLoggedInState(user);
+
+  } catch (error) {
+    console.log('📴 Could not sync session from website:', error.message);
+    showLoggedOutState();
+  }
+}
+
+function showLoggedInState(user) {
+  elements.authLoggedOut.style.display = 'none';
+  elements.authLoggedIn.style.display = 'flex';
+  elements.authUserName.textContent = user.name || user.email || 'User';
+}
+
+function showLoggedOutState() {
+  elements.authLoggedOut.style.display = 'flex';
+  elements.authLoggedIn.style.display = 'none';
+}
 
 /**
  * Load current show from active Netflix tab
@@ -27,13 +120,11 @@ async function loadCurrentShow() {
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     
-    // Check if on Netflix
     if (!tab.url || !tab.url.includes('netflix.com')) {
       showFallbackState('Open Netflix to see ratings');
       return;
     }
     
-    // Ask content script for current show info
     chrome.tabs.sendMessage(tab.id, { action: 'getCurrentShow' }, async (response) => {
       if (chrome.runtime.lastError) {
         console.log('Content script not ready:', chrome.runtime.lastError.message);
@@ -54,13 +145,12 @@ async function loadCurrentShow() {
   }
 }
 
-
 /**
  * Fetch poster from TMDB API
  */
 async function fetchPoster(showName) {
   try {
-    const TMDB_API_KEY = 'a0345fb274682b8789f29be371c3bfad';  // Your API key
+    const TMDB_API_KEY = 'a0345fb274682b8789f29be371c3bfad';
     const url = `https://api.themoviedb.org/3/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(showName)}`;
     
     const response = await fetch(url);
@@ -87,10 +177,8 @@ async function fetchPoster(showName) {
 async function displayShowInfo(showData) {
   const showName = showData.showName || showData.title || 'Unknown Show';
   
-  // Show title (big text)
   elements.showTitle.textContent = showName;
   
-  // Episode info (smaller text)
   if (showData.episodeNumber && showData.episodeTitle) {
     elements.episodeInfo.textContent = `${showData.episodeNumber}: ${showData.episodeTitle}`;
   } else if (showData.episodeNumber) {
@@ -99,7 +187,6 @@ async function displayShowInfo(showData) {
     elements.episodeInfo.textContent = 'Movie';
   }
   
-  // Fetch and display poster
   const posterUrl = await fetchPoster(showName);
   if (posterUrl) {
     elements.posterImage.src = posterUrl;
@@ -110,7 +197,6 @@ async function displayShowInfo(showData) {
     elements.placeholderIcon.style.display = 'block';
   }
   
-  // Get ratings from storage and calculate average
   await displayRating(showName);
 }
 
@@ -122,7 +208,6 @@ async function displayRating(showName) {
     const result = await chrome.storage.local.get(['ratings']);
     const allRatings = result.ratings || [];
     
-    // Filter ratings for this show
     const showRatings = allRatings.filter(r => 
       (r.showName && r.showName === showName) || 
       (r.title && r.title.includes(showName))
@@ -134,7 +219,6 @@ async function displayRating(showName) {
       return;
     }
     
-    // Calculate average
     const sum = showRatings.reduce((acc, r) => acc + r.rating, 0);
     const avg = sum / showRatings.length;
     
@@ -163,8 +247,18 @@ function showFallbackState(message) {
  */
 function attachEventListeners() {
   elements.dashboardBtn.addEventListener('click', () => {
-    console.log('📊 Opening dashboard...');
-    chrome.tabs.create({ url: 'http://localhost:3000/dashboard' });
+    chrome.tabs.create({ url: `${WEB_APP_URL}/dashboard` });
+  });
+
+  elements.loginBtn.addEventListener('click', () => {
+    chrome.tabs.create({ url: `${WEB_APP_URL}/auth` });
+  });
+
+  elements.logoutBtn.addEventListener('click', async () => {
+    await new Promise((resolve) => {
+      chrome.storage.local.remove(['auth_token', 'auth_user'], resolve);
+    });
+    showLoggedOutState();
   });
 }
 
@@ -184,7 +278,7 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'episodeChanged') {
     console.log('🔄 Episode changed, refreshing popup...');
-    loadCurrentShow();  // Reload the popup UI
+    loadCurrentShow();
     sendResponse({ success: true });
   }
 });

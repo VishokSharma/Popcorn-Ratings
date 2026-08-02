@@ -26,6 +26,18 @@
     </div>
   </header>
 
+  <!-- Auth Status Bar -->
+  <div class="auth-bar">
+    <div class="auth-logged-out" id="auth-logged-out">
+      <span class="auth-message">Not logged in</span>
+      <button class="auth-btn" id="login-btn">🔑 Login</button>
+    </div>
+    <div class="auth-logged-in" id="auth-logged-in" style="display: none;">
+      <span class="auth-user">👤 <span id="auth-user-name">User</span></span>
+      <button class="auth-btn auth-btn-logout" id="logout-btn">Logout</button>
+    </div>
+  </div>
+
   <!-- Current Show Ticket - Side by Side Layout -->
   <div class="show-ticket">
     
