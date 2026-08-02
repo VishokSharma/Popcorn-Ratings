@@ -138,6 +138,28 @@ CREATE INDEX idx_ratings_user_show ON ratings(user_id, show_name);
 
 -- Index for TMDB lookups (used when checking if poster already fetched)
 CREATE INDEX idx_ratings_tmdb_id ON ratings(tmdb_id);
+
+
+-- ================================================
+-- RECOMMENDATIONS TABLE
+-- ================================================
+-- Stores the LLM-generated recommendations for each user.
+-- Regenerated on-demand (user clicks "Get Recommendations"),
+-- overwriting the previous batch for that user.
+
+CREATE TABLE recommendations (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  show_name VARCHAR(255) NOT NULL,
+  reason TEXT,
+  rank INTEGER NOT NULL,
+  poster_url VARCHAR(500),
+  generated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_recommendations_user ON recommendations(user_id);
+
+
 -- ============================================
 -- SAMPLE DATA (for testing)
 -- ============================================
