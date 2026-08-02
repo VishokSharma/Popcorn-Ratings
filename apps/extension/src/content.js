@@ -207,9 +207,32 @@ function handleSkip() {
 }
 
 /**
+ * Fetch poster from TMDB API
+ */
+async function fetchPosterForRating(showName) {
+  try {
+    const TMDB_API_KEY = 'a0345fb274682b8789f29be371c3bfad';
+    const url = `https://api.themoviedb.org/3/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(showName)}`;
+
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (data.results && data.results.length > 0 && data.results[0].poster_path) {
+      return `https://image.tmdb.org/t/p/w500${data.results[0].poster_path}`;
+    }
+
+    return null;
+
+  } catch (error) {
+    console.error('Error fetching poster for rating popup:', error);
+    return null;
+  }
+}
+
+/**
  * Called when autoplay/episode end is detected
  */
-function onAutoplayDetected() {
+async function onAutoplayDetected() {
   if (autoplayDetected) return;
   
   autoplayDetected = true;
@@ -218,6 +241,7 @@ function onAutoplayDetected() {
   pauseCurrentVideo();
 
   const metadata = getCurrentMetadata();
+  const posterUrl = await fetchPosterForRating(metadata.showName);
 
   if (window.PopcornRating) {
     setTimeout(() => {
@@ -226,6 +250,7 @@ function onAutoplayDetected() {
         showName: metadata.showName,
         episodeNumber: metadata.episodeNumber,
         episodeName: metadata.episodeTitle,
+        posterUrl: posterUrl,
         onSubmit: handleRatingSubmit,
         onSkip: handleSkip
       });

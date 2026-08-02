@@ -35,9 +35,10 @@ const PopcornRating = (function () {
         <div class="pcr-modal" id="pcr-modal">
           <button class="pcr-close" id="pcr-close" aria-label="Close">×</button>
           
-          <!-- Popcorn Display -->
+          <!-- Popcorn/Poster Display -->
           <div class="pcr-popcorn-display">
-            <div class="pcr-tub">🍿</div>
+            <img id="pcr-poster-image" class="pcr-poster-image" alt="Show poster" style="display: none;">
+            <div class="pcr-tub" id="pcr-tub">🍿</div>
           </div>
           
           <!-- Title -->
@@ -244,6 +245,7 @@ if (submitBtn) {
       showName = '',
       episodeNumber = '',
       episodeName = '',
+      posterUrl = '',
       onSubmit = null, 
       onSkip = null 
     } = options;
@@ -268,6 +270,30 @@ if (submitBtn) {
     const container = document.createElement('div');
     container.innerHTML = createPopupHTML(displayText);
     document.body.appendChild(container.firstElementChild);
+
+    // Load poster if available, fall back to popcorn emoji on failure
+    if (posterUrl) {
+      const posterImg = document.getElementById('pcr-poster-image');
+      const tub = document.getElementById('pcr-tub');
+
+      if (posterImg) {
+        posterImg.onload = () => {
+          posterImg.style.display = 'block';
+          if (tub) tub.style.display = 'none';
+        };
+        posterImg.onerror = () => {
+          posterImg.style.display = 'none';
+          if (tub) tub.style.display = 'block';
+        };
+        posterImg.src = posterUrl;
+      }
+    }
+
+    // Generate stars
+    generateStars();
+
+    // Attach listeners
+    attachEventListeners();
 
     // Generate stars
     generateStars();

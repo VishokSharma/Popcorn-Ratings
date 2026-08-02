@@ -82,10 +82,14 @@
   transform: rotate(90deg);
 }
 
-/* Popcorn Display - Theater Style */
+/* Popcorn/Poster Display - Theater Style */
 .pcr-popcorn-display {
   text-align: center;
   margin-bottom: 20px;
+  min-height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .pcr-popcorn-display .pcr-tub {
@@ -93,6 +97,15 @@
   font-size: 5rem;
   animation: wiggle 3s ease-in-out infinite;
   filter: drop-shadow(0 4px 12px rgba(139, 0, 0, 0.3));
+}
+
+.pcr-poster-image {
+  width: 100px;
+  height: 140px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 3px solid #8b0000;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
 }
 
 @keyframes wiggle {
