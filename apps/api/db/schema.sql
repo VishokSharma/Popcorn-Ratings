@@ -90,6 +90,11 @@ CREATE TABLE ratings (
   genre VARCHAR(50),                       -- Drama, Comedy, etc.
   url TEXT,                                -- Full URL to episode
   
+  -- TMDB integration (poster art)
+  tmdb_id INTEGER,                  -- ID of the show/movie on TMDB
+  tmdb_poster_url VARCHAR(500),     -- Full poster image URL
+  tmdb_type VARCHAR(50),            -- 'tv' or 'movie'
+
   -- Timestamps
   created_at TIMESTAMP DEFAULT NOW(),
   
@@ -131,6 +136,8 @@ CREATE INDEX idx_ratings_created_at ON ratings(created_at DESC);
 -- Use case: "Get user X's ratings for show Y"
 CREATE INDEX idx_ratings_user_show ON ratings(user_id, show_name);
 
+-- Index for TMDB lookups (used when checking if poster already fetched)
+CREATE INDEX idx_ratings_tmdb_id ON ratings(tmdb_id);
 -- ============================================
 -- SAMPLE DATA (for testing)
 -- ============================================
