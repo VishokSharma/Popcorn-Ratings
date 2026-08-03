@@ -216,6 +216,9 @@ app.use('/api/auth', authRoutes)
 const tmdbRoutes = require('./routes/tmdb')
 app.use('/api/tmdb', tmdbRoutes)
 
+const recommendationsRoutes = require('./routes/recommendations')
+app.use('/api/recommendations', recommendationsRoutes)
+
 /**
  * 404 Handler - Catch-all for undefined routes
  * 
