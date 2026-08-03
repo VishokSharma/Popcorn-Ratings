@@ -94,9 +94,8 @@ CREATE TABLE ratings (
   tmdb_id INTEGER,                  -- ID of the show/movie on TMDB
   tmdb_poster_url VARCHAR(500),     -- Full poster image URL
   tmdb_type VARCHAR(50),            -- 'tv' or 'movie'
-
   -- Timestamps
-  created_at TIMESTAMP DEFAULT NOW(),
+  created_at TIMESTAMP DEFAULT NOW()
   
   -- Soft delete support (optional - we won't use initially)
   -- deleted_at TIMESTAMP DEFAULT NULL
