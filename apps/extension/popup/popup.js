@@ -205,28 +205,28 @@ async function displayShowInfo(showData) {
  */
 async function displayRating(showName) {
   try {
-    const result = await chrome.storage.local.get(['ratings']);
-    const allRatings = result.ratings || [];
-    
-    const showRatings = allRatings.filter(r => 
-      (r.showName && r.showName === showName) || 
-      (r.title && r.title.includes(showName))
-    );
-    
-    if (showRatings.length === 0) {
+    const res = await fetch(`${API_URL}/api/ratings/show-average/${encodeURIComponent(showName)}`);
+
+    if (!res.ok) {
       elements.ratingValue.textContent = '-';
       elements.ratingCount.textContent = '(0)';
       return;
     }
-    
-    const sum = showRatings.reduce((acc, r) => acc + r.rating, 0);
-    const avg = sum / showRatings.length;
-    
-    elements.ratingValue.textContent = avg.toFixed(1);
-    elements.ratingCount.textContent = `(${showRatings.length})`;
-    
+
+    const data = await res.json();
+    const { avgRating, count } = data.data;
+
+    if (!avgRating || count === 0) {
+      elements.ratingValue.textContent = '-';
+      elements.ratingCount.textContent = '(0)';
+      return;
+    }
+
+    elements.ratingValue.textContent = avgRating.toFixed(1);
+    elements.ratingCount.textContent = `(${count})`;
+
   } catch (error) {
-    console.error('Error calculating rating:', error);
+    console.error('Error fetching show average:', error);
     elements.ratingValue.textContent = '-';
     elements.ratingCount.textContent = '(0)';
   }

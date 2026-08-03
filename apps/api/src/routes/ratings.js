@@ -21,6 +21,42 @@ const router = express.Router()
 const pool = require('../config/database')
 const { authenticateToken } = require('../middleware/auth')  
 
+
+/**
+ * GET /api/ratings/show-average/:showName
+ * 
+ * Public endpoint — returns the average rating and count
+ * across ALL users for a given show name. No auth required,
+ * since this is aggregate data, not any single user's private list.
+ */
+router.get('/show-average/:showName', async (req, res) => {
+  try {
+    const { showName } = req.params
+
+    const result = await pool.query(
+      `SELECT AVG(rating)::numeric(10,1) as avg_rating, COUNT(*) as rating_count
+       FROM ratings
+       WHERE show_name = $1`,
+      [showName]
+    )
+
+    res.json({
+      success: true,
+      data: {
+        avgRating: parseFloat(result.rows[0].avg_rating) || null,
+        count: parseInt(result.rows[0].rating_count) || 0
+      }
+    })
+
+  } catch (error) {
+    console.error('❌ Error fetching show average:', error.message)
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch show average'
+    })
+  }
+})
+
 /**
  * ============================================
  * GET /api/ratings
