@@ -23,7 +23,7 @@ function getApiKey() {
  * @param {string} query - Show/movie name to search
  * @returns {Promise<Object>} - Show data with poster URL
  */
-async function searchShow(query) {
+async function searchShow(query, retryCount = 0) {
   try {
     if (!query || query.trim() === '') {
       console.log('⚠️ Empty search query')
@@ -85,7 +85,16 @@ async function searchShow(query) {
     return null
 
   } catch (error) {
-    console.error('❌ TMDB search error:', error)
+    console.error(`❌ TMDB search error (attempt ${retryCount + 1}):`, error.message)
+
+    // Retry once on network-level failures (TMDB connection resets are often transient)
+    if (retryCount < 1) {
+      console.log(`🔄 Retrying TMDB search for "${query}"...`)
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      return searchShow(query, retryCount + 1)
+    }
+
+    console.error(`⚠️ TMDB search permanently failed for "${query}" after retry — poster will be null`)
     return null
   }
 }

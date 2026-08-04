@@ -193,8 +193,12 @@ router.post('/', authenticateToken, async (req, res) => {
         tmdbData?.tmdb_type || null
       ]
     )
-
-    console.log(`✅ Rating created with poster for: ${show_name}`)
+    
+    if (tmdbData?.poster_url) {
+      console.log(`✅ Rating created with poster for: ${show_name}`)
+    } else {
+      console.log(`⚠️ Rating created WITHOUT poster for: ${show_name} (TMDB fetch failed or found no match)`)
+    }
 
     res.status(201).json({
       success: true,
